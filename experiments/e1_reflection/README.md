@@ -65,14 +65,14 @@
 
 ## 结果
 
-```
-====================================================================
-Agent        Mode         Success Rate     Avg Steps    Reflections
-====================================================================
-react        fog_of_war   100.0% (100/100)     2.2         0
-reflective   fog_of_war   100.0% (100/100)     3.3        27
-====================================================================
-```
+![Comparison Bar Chart](../../results/plots/e1_comparison_bars.png)
+*Fig 1: ReAct vs Reflective Agent — success rate, avg steps, reflection count under fog_of_war*
+
+![ReAct Trajectory](../../results/plots/e1_trajectory_react.png)
+*Fig 2: ReAct Agent trajectory — random exploration without memory*
+
+![Reflective Trajectory](../../results/plots/e1_trajectory_reflective.png)
+*Fig 3: Reflective Agent trajectory — working memory guided exploration*
 
 ### 发现
 
