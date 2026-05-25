@@ -14,6 +14,11 @@ The SomatoMind Brain is designed as a **multi-timescale, modular cognitive archi
 
 ## Cognitive Architecture
 
+![Architecture Diagram](https://excalidraw.com/#json=jDqA7sU8CwBUjegvS7z_0,Ugr_Lm945c3D0JSi9v_uiA)
+
+> 💡 Interactive diagram link: https://excalidraw.com/#json=jDqA7sU8CwBUjegvS7z_0,Ugr_Lm945c3D0JSi9v_uiA
+> Open it in Excalidraw to zoom, pan, and inspect every module.
+
 ```
                          ┌─────────────────────────────┐
                          │     Meta-Cognitive Layer     │
