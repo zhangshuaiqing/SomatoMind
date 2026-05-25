@@ -4,45 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SomatoMind — 认知架构</title>
+  <link rel="stylesheet" href="assets/style.css">
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    :root {
-      --bg: #0d1117; --fg: #c9d1d9; --fg2: #8b949e;
-      --accent: #58a6ff; --border: #30363d;
-      --blue: #1f3a5f; --blue-border: #58a6ff;
-      --green: #1f3a2f; --green-border: #3fb950;
-      --purple: #2d1b69; --purple-border: #d2a8ff;
-      --red: #3d1a1a; --red-border: #f85149;
-      --orange: #3d2e00; --orange-border: #d29922;
-      --card-radius: 10px;
-      --transition: 0.25s ease;
-    }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
-      background: var(--bg); color: var(--fg); line-height: 1.6;
-      max-width: 1060px; margin: 0 auto; padding: 2rem 1rem;
-    }
-    h1 { font-size: 2.5rem; margin: 1.5rem 0 0.25rem; display: flex; align-items: center; gap: 0.75rem; }
-    .subtitle { font-size: 1.1rem; color: var(--fg2); }
-    .tagline {
-      font-style: italic; border-left: 3px solid var(--accent);
-      padding-left: 1rem; margin: 1rem 0 2rem; color: var(--fg2);
-    }
-    a { color: var(--accent); text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    .footer {
-      margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border);
-      font-size: 0.85rem; color: var(--fg2); text-align: center;
-    }
-
-    /* ── Zone labels ── */
-    .zone-label {
-      font-size: 0.85rem; color: var(--fg2); margin: 2rem 0 0.6rem 0.25rem;
-      font-weight: 600; letter-spacing: 0.5px;
-    }
-    .zone-label .timescale { font-weight: 400; color: var(--fg2); opacity: 0.7; margin-left: 0.5rem; }
-
-    /* ── Card grid ── */
+    /* SomatoMind-specific overrides */
     .card-grid {
       display: flex; flex-wrap: wrap; gap: 12px;
       align-items: stretch;
@@ -209,7 +173,7 @@
         <td><strong>E1</strong> — 反思回路</td>
         <td>对比 ReAct vs Reflective Agent，验证工作记忆 + 反思回路在部分可观测环境下的效果</td>
         <td><span style="color:#3fb950;">✅ 已完成</span></td>
-        <td><a href="https://github.com/zhangshuaiqing/SomatoMind/blob/main/experiments/e1_reflection/README.md" target="_blank">查看报告 →</a></td>
+        <td><a href="experiments/e1_reflection.html" target="_blank">查看报告 →</a></td>
       </tr>
       <tr>
         <td><strong>E2</strong> — 网络架构对比</td>
@@ -231,6 +195,8 @@
 <div class="links">
   <a href="https://github.com/zhangshuaiqing/SomatoMind">GitHub</a>
   <a href="https://github.com/zhangshuaiqing/SomatoMind/discussions">Discussions</a>
+  <a href="experiments/e1_reflection.html">E1 Report</a>
+  <a href="gridworld_viewer.html">GridWorld</a>
   <a href="https://github.com/zhangshuaiqing/SomatoMind/issues">Issues</a>
   <a href="https://github.com/zhangshuaiqing/SomatoMind/blob/main/README.md">README</a>
   <a href="https://github.com/zhangshuaiqing/SomatoMind/blob/main/docs/architecture.md">Architecture Doc</a>

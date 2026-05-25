@@ -1,0 +1,104 @@
+/* SomatoMind Shared Styles — used by all pages */
+:root {
+  --bg: #0d1117; --fg: #c9d1d9; --fg2: #8b949e;
+  --accent: #58a6ff; --border: #30363d;
+  --blue: #1f3a5f; --blue-border: #58a6ff;
+  --green: #1f3a2f; --green-border: #3fb950;
+  --purple: #2d1b69; --purple-border: #d2a8ff;
+  --red: #3d1a1a; --red-border: #f85149;
+  --orange: #3d2e00; --orange-border: #d29922;
+  --card-radius: 10px;
+  --transition: 0.25s ease;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  background: var(--bg); color: var(--fg); line-height: 1.7;
+  max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem;
+}
+
+/* ── Typography ── */
+h1 { font-size: 2rem; color: var(--accent); margin: 1.5rem 0 0.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+h2 { font-size: 1.4rem; color: var(--accent); margin: 1.5rem 0 0.75rem; }
+h3 { font-size: 1.1rem; color: var(--fg); margin: 1.2rem 0 0.5rem; }
+h4 { font-size: 1rem; color: var(--fg); margin: 1rem 0 0.4rem; }
+
+p { margin: 0.6rem 0; color: var(--fg); }
+strong { color: var(--fg); font-weight: 600; }
+em { color: var(--fg2); }
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── Code ── */
+code {
+  background: #161b22; border: 1px solid var(--border); border-radius: 4px;
+  padding: 0.15rem 0.4rem; font-size: 0.85em; color: #79c0ff;
+}
+pre {
+  background: #161b22; border: 1px solid var(--border); border-radius: 8px;
+  padding: 1rem; overflow-x: auto; margin: 1rem 0;
+}
+pre code {
+  background: none; border: none; padding: 0; font-size: 0.82rem;
+  color: var(--fg); line-height: 1.5;
+}
+
+/* ── Tables ── */
+table {
+  width: 100%; border-collapse: collapse; margin: 1rem 0;
+  font-size: 0.88rem;
+}
+th, td {
+  padding: 0.55rem 0.75rem; border: 1px solid var(--border);
+  text-align: left; vertical-align: top;
+}
+th { background: #161b22; color: var(--accent); font-weight: 600; }
+td { color: var(--fg2); }
+tr:hover td { background: rgba(255,255,255,0.02); }
+
+/* ── Lists ── */
+ul, ol { margin: 0.6rem 0; padding-left: 1.5rem; }
+li { margin: 0.3rem 0; color: var(--fg2); }
+li strong { color: var(--fg); }
+
+/* ── Blockquote ── */
+blockquote {
+  border-left: 3px solid var(--accent); padding-left: 1rem;
+  margin: 1rem 0; color: var(--fg2); font-style: italic;
+}
+
+/* ── Img ── */
+img {
+  max-width: 100%; border-radius: 8px; border: 1px solid var(--border);
+  margin: 1rem 0;
+}
+
+/* ── Horizontal rule ── */
+hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+
+/* ── Header bar ── */
+.site-header {
+  display: flex; align-items: center; gap: 1rem;
+  padding-bottom: 1rem; margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+.site-header .logo { font-size: 1.4rem; font-weight: bold; color: var(--fg); }
+.site-header .logo:hover { text-decoration: none; }
+.site-header nav { margin-left: auto; display: flex; gap: 1rem; }
+.site-header nav a { font-size: 0.88rem; color: var(--fg2); padding: 0.25rem 0; }
+.site-header nav a:hover { color: var(--accent); text-decoration: none; }
+
+/* ── Footer ── */
+.site-footer {
+  margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border);
+  font-size: 0.85rem; color: var(--fg2); text-align: center;
+}
+
+/* ── Status badges ── */
+.badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 12px; font-size: 0.75rem; font-weight: 500; }
+.badge.done { background: rgba(63,185,80,0.15); color: #3fb950; }
+.badge.pending { background: rgba(139,148,158,0.15); color: #8b949e; }
+.badge.fail { background: rgba(248,81,73,0.15); color: #f85149; }
