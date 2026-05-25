@@ -324,11 +324,19 @@ function initEnv(levelIdx) {
   
   env.log = [];
   
-  // BFS validation: check if goal is reachable (ignoring keys/switches, only consider openable doors)
+  // BFS validation: check if goal is reachable
   const allDoorsOpen = new Set(Object.keys(env.doorState));
   const reachable = bfsReachable(env.grid, env.w, env.h, env.agentPos, env.goalPos, allDoorsOpen);
   if (!reachable) {
-    logMsg('⚠️ 警告：此关卡地图可能存在不可达的问题', 'error');
+    logMsg('⚠️ 路径不通，正在自动修复...', 'warn');
+    // Auto-repair: clear a straight-ish path from agent to goal
+    autoRepairPath(env);
+    const repaired = bfsReachable(env.grid, env.w, env.h, env.agentPos, env.goalPos, allDoorsOpen);
+    if (repaired) {
+      logMsg('✅ 自动修复完成，终点现在可达', 'success');
+    } else {
+      logMsg('❌ 自动修复失败，请检查关卡设计', 'error');
+    }
   } else {
     logMsg('✅ 路径验证通过，终点可达', 'info');
   }
@@ -389,6 +397,51 @@ function bfsReachable(grid, w, h, start, goal, doorsOpen) {
     }
   }
   return false;
+}
+
+// ── Auto-repair path ──
+function autoRepairPath(env) {
+  // Simple strategy: BFS without wall restrictions to find a path,
+  // then clear any walls on that path
+  const visited = new Map(); // key -> previous key
+  const queue = [[env.agentPos[0], env.agentPos[1]]];
+  const startKey = `${env.agentPos[0]},${env.agentPos[1]}`;
+  visited.set(startKey, null);
+  const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+  let found = false;
+  
+  while (queue.length > 0 && !found) {
+    const [r, c] = queue.shift();
+    for (const [dr, dc] of dirs) {
+      const nr = r + dr, nc = c + dc;
+      const key = `${nr},${nc}`;
+      if (nr < 0 || nr >= env.h || nc < 0 || nc >= env.w) continue;
+      if (visited.has(key)) continue;
+      visited.set(key, [r, c]);
+      if (nr === env.goalPos[0] && nc === env.goalPos[1]) {
+        found = true;
+        break;
+      }
+      queue.push([nr, nc]);
+    }
+  }
+  
+  if (!found) return;
+  
+  // Trace path back and clear walls
+  let cur = `${env.goalPos[0]},${env.goalPos[1]}`;
+  const path = [];
+  while (cur !== startKey) {
+    path.push(cur);
+    cur = visited.get(cur);
+    if (!cur) break;
+    const [pr, pc] = cur.split(',').map(Number);
+    const idx = pr * env.w + pc;
+    if (env.grid[idx] === T.WALL) {
+      env.grid[idx] = T.EMPTY;
+    }
+  }
+  logMsg(`清除了 ${path.length} 格障碍物打通路径`, 'info');
 }
 
 function markVisited(r, c) {
