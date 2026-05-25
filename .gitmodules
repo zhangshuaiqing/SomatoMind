@@ -1,3 +1,0 @@
-[submodule "env/gridworld"]
-	path = env/gridworld
-	url = git@github.com:zhangshuaiqing/navigation-agent.git

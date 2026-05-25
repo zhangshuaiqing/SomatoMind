@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GridWorld Viewer</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      background: #0d1117; color: #c9d1d9;
+      padding: 2rem; max-width: 960px; margin: 0 auto;
+    }
+    h1 { font-size: 1.6rem; margin-bottom: 0.5rem; color: #58a6ff; }
+    .subtitle { color: #8b949e; margin-bottom: 1.5rem; font-size: 0.9rem; }
+
+    /* Controls */
+    .controls { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; margin-bottom: 1rem; }
+    .controls label { font-size: 0.85rem; color: #8b949e; }
+    .controls input, .controls select {
+      background: #161b22; border: 1px solid #30363d; border-radius: 6px;
+      color: #c9d1d9; padding: 0.35rem 0.5rem; font-size: 0.85rem;
+    }
+    .controls button {
+      background: #1f3a5f; border: 1px solid #58a6ff; border-radius: 6px;
+      color: #58a6ff; padding: 0.4rem 1rem; cursor: pointer; font-size: 0.85rem;
+    }
+    .controls button:hover { background: #1f4a7f; }
+    .controls button:active { transform: scale(0.97); }
+    .controls button.primary { background: #238636; border-color: #3fb950; color: #fff; }
+    .controls button.primary:hover { background: #2ea043; }
+    .controls .spacer { flex: 1; }
+
+    /* Grid canvas */
+    .grid-wrap { position: relative; display: inline-block; margin-bottom: 1rem; }
+    #grid-canvas { border: 1px solid #30363d; border-radius: 8px; display: block; }
+
+    /* Info panel */
+    .info-panel {
+      display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;
+      background: #161b22; border: 1px solid #30363d; border-radius: 8px;
+      padding: 0.75rem 1rem;
+    }
+    .info-item { font-size: 0.85rem; }
+    .info-item .label { color: #8b949e; margin-right: 0.3rem; }
+    .info-item .value { color: #c9d1d9; font-weight: 500; }
+    .info-item .value.good { color: #3fb950; }
+    .info-item .value.bad { color: #f85149; }
+
+    /* JSON import area */
+    .json-area {
+      width: 100%; min-height: 80px; background: #161b22; border: 1px solid #30363d;
+      border-radius: 8px; color: #8b949e; padding: 0.75rem; font-family: monospace;
+      font-size: 0.8rem; margin-top: 0.5rem; resize: vertical;
+    }
+    .json-label { font-size: 0.85rem; color: #8b949e; margin-top: 1rem; margin-bottom: 0.3rem; }
+  </style>
+</head>
+<body>
+
+<h1>🧬 GridWorld Viewer</h1>
+<p class="subtitle">SomatoMind — 在线可视化 GridWorld 环境和 Agent 轨迹</p>
+
+<div class="controls">
+  <label>地图大小:</label>
+  <select id="size-select">
+    <option value="6">6×6</option>
+    <option value="8" selected>8×8</option>
+    <option value="10">10×10</option>
+    <option value="12">12×12</option>
+  </select>
+  <label>障碍物:</label>
+  <input type="range" id="obstacle-range" min="0" max="50" value="25" style="width:80px">
+  <span id="obstacle-label" style="font-size:0.8rem;color:#8b949e;">25%</span>
+  <label>模式:</label>
+  <select id="mode-select">
+    <option value="full">Full</option>
+    <option value="local">Local</option>
+    <option value="fog_of_war" selected>Fog of War</option>
+  </select>
+  <label>视野:</label>
+  <select id="view-select">
+    <option value="1">1</option>
+    <option value="2" selected>2</option>
+    <option value="3">3</option>
+  </select>
+  <label>动态障碍物:</label>
+  <input type="number" id="dynamic-num" value="2" min="0" max="10" style="width:50px">
+  <button class="primary" id="btn-new">New Map</button>
+  <button id="btn-step">Step ▶</button>
+  <button id="btn-auto">Auto Run</button>
+</div>
+
+<div class="grid-wrap">
+  <canvas id="grid-canvas"></canvas>
+</div>
+
+<div class="info-panel" id="info-panel"></div>
+
+<div class="json-label">当前环境状态 (JSON, 可导入/导出)</div>
+<textarea class="json-area" id="json-area" readonly></textarea>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// GridWorld Renderer (pure client-side HTML/JS)
+// ═══════════════════════════════════════════════════════════════
+
+const canvas = document.getElementById('grid-canvas');
+const ctx = canvas.getContext('2d');
+
+let CELL = 56;          // pixel per cell
+let state = null;       // current env state
+let autoTimer = null;
+
+const COLORS = {
+  bg: '#0d1117',
+  grid: '#161b22',
+  gridLine: '#21262d',
+  empty: '#161b22',
+  obstacle: '#30363d',
+  dynamic: '#f85149',
+  agent: '#58a6ff',
+  agentGlow: '#79c0ff',
+  goal: '#d29922',
+  goalGlow: '#ffd8a8',
+  visited: 'rgba(88,166,255,0.08)',
+  trail: 'rgba(88,166,255,0.25)',
+  trailFade: 'rgba(88,166,255,0.06)',
+  fog: '#0a0e14',
+  text: '#c9d1d9',
+  textDim: '#8b949e',
+};
+
+// ── Generate random env (client-side only for visualization) ──
+
+function generateMap(size, obstacleRatio, mode, viewRange, numDynamic) {
+  // Grid: 0=empty, 1=obstacle
+  const grid = [];
+  for (let r = 0; r < size; r++) {
+    grid[r] = [];
+    for (let c = 0; c < size; c++) {
+      grid[r][c] = Math.random() < obstacleRatio ? 1 : 0;
+    }
+  }
+  
+  // Place start and goal
+  let start, goal;
+  do {
+    start = [Math.floor(Math.random() * size), Math.floor(Math.random() * size)];
+    goal = [Math.floor(Math.random() * size), Math.floor(Math.random() * size)];
+  } while (start[0] === goal[0] && start[1] === goal[1]);
+  
+  grid[start[0]][start[1]] = 0;
+  grid[goal[0]][goal[1]] = 0;
+  
+  // Clear path
+  let r = start[0], c = start[1];
+  while (r !== goal[0] || c !== goal[1]) {
+    if (Math.random() < 0.5 && r !== goal[0]) {
+      r += goal[0] > r ? 1 : -1;
+    } else if (c !== goal[1]) {
+      c += goal[1] > c ? 1 : -1;
+    } else {
+      r += goal[0] > r ? 1 : -1;
+    }
+    if (grid[r] && grid[r][c] === 1) grid[r][c] = 0;
+  }
+  
+  // Dynamic obstacles
+  const dynamic = [];
+  for (let i = 0; i < numDynamic; i++) {
+    let pos;
+    let attempts = 0;
+    do {
+      pos = [Math.floor(Math.random() * size), Math.floor(Math.random() * size)];
+      attempts++;
+    } while ((grid[pos[0]][pos[1]] === 1 || 
+             (pos[0] === start[0] && pos[1] === start[1]) ||
+             (pos[0] === goal[0] && pos[1] === goal[1])) && attempts < 50);
+    if (attempts < 50) {
+      dynamic.push({row: pos[0], col: pos[1]});
+      grid[pos[0]][pos[1]] = 0;
+    }
+  }
+  
+  return {
+    size, grid, agent_pos: [...start], goal_pos: [...goal],
+    step_count: 0, max_steps: size * size * 2, done: false,
+    observation_mode: mode, view_range: viewRange,
+    trajectory: [], visited: Array(size).fill(null).map(() => Array(size).fill(false)),
+    dynamic_obstacles: dynamic,
+  };
+}
+
+// ── Rendering ──
+
+function render(s) {
+  if (!s) return;
+  state = s;
+  const size = s.size;
+  const cellSize = Math.min(CELL, Math.floor(560 / size));
+  CELL = cellSize;
+  
+  canvas.width = size * cellSize;
+  canvas.height = size * cellSize;
+  
+  // Background
+  ctx.fillStyle = COLORS.grid;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  const visited = s.visited || [];
+  const trajectory = s.trajectory || [];
+  const visitedSet = new Set();
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c < size; c++) {
+      if (visited[r] && visited[r][c]) visitedSet.add(`${r},${c}`);
+    }
+  }
+  
+  // Draw cells
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c < size; c++) {
+      const x = c * cellSize, y = r * cellSize;
+      
+      // Fog
+      if (s.observation_mode === 'fog_of_war' && !visitedSet.has(`${r},${c}`)) {
+        ctx.fillStyle = COLORS.fog;
+        ctx.fillRect(x, y, cellSize, cellSize);
+        ctx.fillStyle = COLORS.gridLine;
+        ctx.strokeRect(x, y, cellSize, cellSize);
+        continue;
+      }
+      
+      // Cell type
+      const cell = s.grid[r][c];
+      if (cell === 1) {
+        ctx.fillStyle = COLORS.obstacle;
+      } else if (visitedSet.has(`${r},${c}`) && (r !== s.agent_pos[0] || c !== s.agent_pos[1])) {
+        ctx.fillStyle = COLORS.visited;
+      } else {
+        ctx.fillStyle = COLORS.empty;
+      }
+      ctx.fillRect(x, y, cellSize, cellSize);
+      
+      // Dynamic obstacles
+      const isDynamic = s.dynamic_obstacles.some(d => d.row === r && d.col === c);
+      if (isDynamic) {
+        ctx.fillStyle = COLORS.dynamic;
+        ctx.beginPath();
+        ctx.arc(x + cellSize/2, y + cellSize/2, cellSize * 0.25, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      
+      // Grid line
+      ctx.strokeStyle = COLORS.gridLine;
+      ctx.lineWidth = 0.5;
+      ctx.strokeRect(x, y, cellSize, cellSize);
+    }
+  }
+  
+  // Trajectory trail
+  if (trajectory.length > 1) {
+    ctx.beginPath();
+    ctx.strokeStyle = COLORS.trail;
+    ctx.lineWidth = 2;
+    for (let i = 0; i < trajectory.length - 1; i++) {
+      const p1 = trajectory[i], p2 = trajectory[i + 1];
+      ctx.moveTo(p1[1] * cellSize + cellSize/2, p1[0] * cellSize + cellSize/2);
+      ctx.lineTo(p2[1] * cellSize + cellSize/2, p2[0] * cellSize + cellSize/2);
+    }
+    ctx.stroke();
+    
+    // Trail dots
+    for (let i = 0; i < trajectory.length; i++) {
+      const p = trajectory[i];
+      const alpha = 0.15 + 0.6 * (i / trajectory.length);
+      ctx.fillStyle = `rgba(88, 166, 255, ${alpha})`;
+      ctx.beginPath();
+      ctx.arc(p[1] * cellSize + cellSize/2, p[0] * cellSize + cellSize/2, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  
+  // Goal
+  const gr = s.goal_pos[0], gc = s.goal_pos[1];
+  if (s.observation_mode !== 'fog_of_war' || visitedSet.has(`${gr},${gc}`) || gr === s.agent_pos[0] && gc === s.agent_pos[1]) {
+    ctx.fillStyle = COLORS.goalGlow;
+    ctx.shadowColor = COLORS.goalGlow;
+    ctx.shadowBlur = 8;
+    ctx.fillStyle = COLORS.goal;
+    ctx.beginPath();
+    ctx.arc(gc * cellSize + cellSize/2, gr * cellSize + cellSize/2, cellSize * 0.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = COLORS.goalGlow;
+    ctx.font = `${cellSize * 0.45}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('★', gc * cellSize + cellSize/2, gr * cellSize + cellSize/2 + 1);
+  }
+  
+  // Agent
+  const ar = s.agent_pos[0], ac = s.agent_pos[1];
+  ctx.shadowColor = COLORS.agentGlow;
+  ctx.shadowBlur = 10;
+  ctx.fillStyle = COLORS.agent;
+  ctx.beginPath();
+  ctx.arc(ac * cellSize + cellSize/2, ar * cellSize + cellSize/2, cellSize * 0.28, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = '#fff';
+  ctx.font = `bold ${cellSize * 0.4}px sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('●', ac * cellSize + cellSize/2, ar * cellSize + cellSize/2);
+  
+  // Update info panel
+  updateInfo(s);
+  updateJson(s);
+}
+
+function updateInfo(s) {
+  const panel = document.getElementById('info-panel');
+  const trajLen = s.trajectory ? s.trajectory.length : 0;
+  const visitedCount = s.visited ? s.visited.flat().filter(v => v).length : 0;
+  const total = s.size * s.size;
+  const coverage = visitedCount / total;
+  
+  panel.innerHTML = `
+    <div class="info-item"><span class="label">Step:</span><span class="value">${s.step_count} / ${s.max_steps}</span></div>
+    <div class="info-item"><span class="label">Agent:</span><span class="value">(${s.agent_pos[0]}, ${s.agent_pos[1]})</span></div>
+    <div class="info-item"><span class="label">Goal:</span><span class="value">(${s.goal_pos[0]}, ${s.goal_pos[1]})</span></div>
+    <div class="info-item"><span class="label">Trajectory:</span><span class="value">${trajLen} steps</span></div>
+    <div class="info-item"><span class="label">Coverage:</span><span class="value">${(coverage * 100).toFixed(0)}%</span></div>
+    <div class="info-item"><span class="label">Status:</span><span class="value ${s.done ? 'good' : ''}">${s.done ? '✓ Goal Reached' : '○ Running'}</span></div>
+    <div class="info-item"><span class="label">Dynamic Obs:</span><span class="value">${s.dynamic_obstacles ? s.dynamic_obstacles.length : 0}</span></div>
+  `;
+}
+
+function updateJson(s) {
+  document.getElementById('json-area').value = JSON.stringify(s, null, 2);
+}
+
+// ── Actions ──
+
+function newMap() {
+  const size = parseInt(document.getElementById('size-select').value);
+  const obsRatio = parseInt(document.getElementById('obstacle-range').value) / 100;
+  const mode = document.getElementById('mode-select').value;
+  const viewRange = parseInt(document.getElementById('view-select').value);
+  const numDynamic = parseInt(document.getElementById('dynamic-num').value) || 0;
+  const s = generateMap(size, obsRatio, mode, viewRange, numDynamic);
+  render(s);
+}
+
+function stepForward() {
+  if (!state || state.done) return;
+  const dirs = ['up', 'down', 'left', 'right'];
+  const action = dirs[Math.floor(Math.random() * 4)];
+  
+  // Basic physics simulation
+  let dr = 0, dc = 0;
+  if (action === 'up') dr = -1;
+  else if (action === 'down') dr = 1;
+  else if (action === 'left') dc = -1;
+  else if (action === 'right') dc = 1;
+  
+  const nr = state.agent_pos[0] + dr, nc = state.agent_pos[1] + dc;
+  if (nr >= 0 && nr < state.size && nc >= 0 && nc < state.size && state.grid[nr][nc] !== 1) {
+    state.trajectory.push([...state.agent_pos]);
+    state.agent_pos = [nr, nc];
+    if (!state.visited[nr]) state.visited[nr] = [];
+    state.visited[nr][nc] = true;
+    state.step_count++;
+    
+    if (nr === state.goal_pos[0] && nc === state.goal_pos[1]) {
+      state.done = true;
+    }
+  } else {
+    state.step_count++;
+  }
+  
+  if (state.step_count >= state.max_steps) state.done = true;
+  
+  // Move dynamic obstacles (simple random walk)
+  if (state.dynamic_obstacles) {
+    for (const d of state.dynamic_obstacles) {
+      const ddirs = [{dr:-1,dc:0},{dr:1,dc:0},{dr:0,dc:-1},{dr:0,dc:1}];
+      const dd = ddirs[Math.floor(Math.random() * 4)];
+      const dnr = d.row + dd.dr, dnc = d.col + dd.dc;
+      if (dnr >= 0 && dnr < state.size && dnc >= 0 && dnc < state.size &&
+          state.grid[dnr][dnc] !== 1 &&
+          !(dnr === state.agent_pos[0] && dnc === state.agent_pos[1]) &&
+          !(dnr === state.goal_pos[0] && dnc === state.goal_pos[1])) {
+        d.row = dnr; d.col = dnc;
+      }
+    }
+  }
+  
+  render(state);
+}
+
+function autoRun() {
+  if (autoTimer) {
+    clearInterval(autoTimer);
+    autoTimer = null;
+    document.getElementById('btn-auto').textContent = 'Auto Run';
+    return;
+  }
+  if (state && state.done) newMap();
+  document.getElementById('btn-auto').textContent = 'Stop';
+  autoTimer = setInterval(() => {
+    if (state && state.done) {
+      clearInterval(autoTimer);
+      autoTimer = null;
+      document.getElementById('btn-auto').textContent = 'Auto Run';
+      return;
+    }
+    stepForward();
+  }, 80);
+}
+
+// ── Import JSON ──
+// Allow pasting a JSON state to render it
+document.getElementById('json-area').addEventListener('input', function() {
+  try {
+    const s = JSON.parse(this.value);
+    if (s.size && s.grid && s.agent_pos) {
+      render(s);
+    }
+  } catch(e) {}
+});
+
+// ── Init ──
+document.getElementById('btn-new').addEventListener('click', newMap);
+document.getElementById('btn-step').addEventListener('click', stepForward);
+document.getElementById('btn-auto').addEventListener('click', autoRun);
+document.getElementById('obstacle-range').addEventListener('input', function() {
+  document.getElementById('obstacle-label').textContent = this.value + '%';
+});
+
+// Start with a map
+newMap();
+
+</script>
+</body>
+</html>

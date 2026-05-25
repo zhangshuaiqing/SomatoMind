@@ -6,9 +6,8 @@ Purpose:
   and verbal self-reflection) in a partially observable GridWorld.
 
 Dependencies:
-  This experiment requires the navigation-agent GridWorld environment,
-  included as a git submodule at env/gridworld/.
-  Initialize with: git submodule update --init --recursive
+  Pure Python + numpy. Uses SomatoMind's built-in GridWorld at env/gridworld.py.
+  No external project dependencies.
 
 Hypothesis:
   The Reflective agent will achieve higher success rates under partial
@@ -22,21 +21,14 @@ Metrics:
 
 Baseline: Pure ReAct agent (no working memory, no reflection)
 """
-
+# ── Import built-in GridWorld ──────────────────────
 import sys, os, random, json, time
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 from collections import deque
 
-import numpy as np
-
-# ── Import GridWorld from submodule ──────────────────
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-SUBMOUDLE_PATH = os.path.join(PROJECT_ROOT, "env", "gridworld", "src")
-if SUBMOUDLE_PATH not in sys.path:
-    sys.path.insert(0, SUBMOUDLE_PATH)
-
-from env.gridworld import GridWorld, CellType
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "env"))
+from gridworld import GridWorld, CellType
 
 
 # ═══════════════════════════════════════════════════════════

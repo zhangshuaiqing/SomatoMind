@@ -15,13 +15,12 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle, Circle, FancyArrowPatch
 import matplotlib.patches as mpatches
 
-# ── Import GridWorld from submodule ──────────────────
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-SUBMOUDLE_PATH = os.path.join(PROJECT_ROOT, "env", "gridworld", "src")
-if SUBMOUDLE_PATH not in sys.path:
-    sys.path.insert(0, SUBMOUDLE_PATH)
-from env.gridworld import GridWorld, CellType
+# ── Import built-in GridWorld ──────────────────
+import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "env"))
+from gridworld import GridWorld, CellType
 
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 RESULTS_DIR = os.path.join(PROJECT_ROOT, "results")
 PLOTS_DIR = os.path.join(PROJECT_ROOT, "results", "plots")
 os.makedirs(PLOTS_DIR, exist_ok=True)
