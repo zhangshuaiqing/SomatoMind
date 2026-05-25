@@ -3,132 +3,184 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SomatoMind</title>
+  <title>SomatoMind — 认知架构</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     :root {
-      --bg: #0d1117;
-      --fg: #c9d1d9;
-      --fg2: #8b949e;
-      --accent: #58a6ff;
-      --border: #30363d;
-      --blue: #1f3a5f;
-      --green: #1f3a2f;
-      --purple: #2d1b69;
-      --red: #3d1a1a;
-      --orange: #3d2e00;
-      --yellow: #2d1b00;
-      --blue-border: #58a6ff;
-      --green-border: #3fb950;
-      --purple-border: #d2a8ff;
-      --red-border: #f85149;
-      --orange-border: #d29922;
+      --bg: #0d1117; --fg: #c9d1d9; --fg2: #8b949e;
+      --accent: #58a6ff; --border: #30363d;
+      --blue: #1f3a5f; --blue-border: #58a6ff;
+      --green: #1f3a2f; --green-border: #3fb950;
+      --purple: #2d1b69; --purple-border: #d2a8ff;
+      --red: #3d1a1a; --red-border: #f85149;
+      --orange: #3d2e00; --orange-border: #d29922;
+      --card-radius: 10px;
+      --transition: 0.25s ease;
     }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
       background: var(--bg); color: var(--fg); line-height: 1.6;
       max-width: 1060px; margin: 0 auto; padding: 2rem 1rem;
     }
-    h1 { font-size: 2.5rem; margin: 1.5rem 0 0.5rem; display: flex; align-items: center; gap: 0.75rem; }
-    .subtitle { font-size: 1.1rem; color: var(--fg2); margin-bottom: 0.5rem; }
+    h1 { font-size: 2.5rem; margin: 1.5rem 0 0.25rem; display: flex; align-items: center; gap: 0.75rem; }
+    .subtitle { font-size: 1.1rem; color: var(--fg2); }
     .tagline {
       font-style: italic; border-left: 3px solid var(--accent);
-      padding-left: 1rem; margin: 1rem 0 1.5rem; color: var(--fg2);
+      padding-left: 1rem; margin: 1rem 0 2rem; color: var(--fg2);
     }
-    .section { margin: 2rem 0; }
-    .section h2 { font-size: 1.3rem; margin-bottom: 0.75rem; color: var(--accent); }
-    .section ul { list-style: none; padding: 0; }
-    .section li {
-      padding: 0.5rem 0.75rem; border: 1px solid var(--border);
-      border-radius: 6px; margin-bottom: 0.5rem;
-    }
-    .section li .status { float: right; font-size: 0.85rem; color: var(--fg2); }
     a { color: var(--accent); text-decoration: none; }
     a:hover { text-decoration: underline; }
     .footer {
       margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border);
-      font-size: 0.85rem; color: var(--fg2);
+      font-size: 0.85rem; color: var(--fg2); text-align: center;
     }
 
-    /* ── Architecture Diagram ────────────────────── */
-    .diagram {
-      position: relative;
-      width: 100%;
-      max-width: 1020px;
-      margin: 1.5rem auto 0;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 20px 12px 16px;
-      background: #161b22;
-      overflow: hidden;
+    /* ── Zone labels ── */
+    .zone-label {
+      font-size: 0.85rem; color: var(--fg2); margin: 2rem 0 0.6rem 0.25rem;
+      font-weight: 600; letter-spacing: 0.5px;
+    }
+    .zone-label .timescale { font-weight: 400; color: var(--fg2); opacity: 0.7; margin-left: 0.5rem; }
+
+    /* ── Card grid ── */
+    .card-grid {
+      display: flex; flex-wrap: wrap; gap: 12px;
+      align-items: stretch;
+    }
+    .card-grid.wide { flex-wrap: nowrap; }
+    @media (max-width: 800px) { .card-grid.wide { flex-wrap: wrap; } }
+
+    /* ── Flow arrows ── */
+    .flow-arrow {
+      display: flex; align-items: center; justify-content: center;
+      min-width: 32px; color: var(--fg2); font-size: 1.1rem;
       user-select: none;
     }
-    .diagram canvas {
-      display: block;
-      width: 100%;
-      height: auto;
-      touch-action: none;
+    .flow-arrow.dashed { opacity: 0.5; font-size: 1rem; }
+    .flow-arrow.bidir { font-size: 0.85rem; writing-mode: vertical-lr; min-width: 20px; }
+
+    /* ── Card ── */
+    .card {
+      flex: 1; min-width: 140px;
+      border: 1px solid var(--border); border-radius: var(--card-radius);
+      padding: 0.9rem 1rem; cursor: pointer;
+      transition: all var(--transition);
+      position: relative;
     }
-    .diagram .caption {
-      text-align: center;
-      color: var(--fg2);
-      font-size: 0.83rem;
-      margin-top: 8px;
-      line-height: 1.7;
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
     }
-    .diagram .caption span { display: inline-block; margin: 0 10px; }
-    .zoom-controls {
-      display: flex; gap: 6px; justify-content: center; margin-top: 8px;
+    .card:active { transform: translateY(0); }
+    .card h3 { font-size: 0.95rem; margin-bottom: 0.3rem; display: flex; align-items: center; gap: 0.4rem; }
+    .card h3 .expand-icon { font-size: 0.7rem; opacity: 0.4; margin-left: auto; }
+    .card .summary {
+      font-size: 0.78rem; color: var(--fg2); line-height: 1.5;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
     }
-    .zoom-controls button {
-      background: #21262d; color: var(--fg); border: 1px solid var(--border);
-      border-radius: 4px; padding: 2px 10px; cursor: pointer; font-size: 0.8rem;
+    .card .detail {
+      display: none; margin-top: 0.6rem; padding-top: 0.6rem;
+      border-top: 1px solid var(--border); font-size: 0.8rem;
     }
-    .zoom-controls button:hover { background: #30363d; }
+    .card .detail ul { list-style: none; padding: 0; }
+    .card .detail li {
+      padding: 0.3rem 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+      display: flex; justify-content: space-between; gap: 0.5rem;
+    }
+    .card .detail li:last-child { border-bottom: none; }
+    .card .detail li .item-name { color: var(--fg); font-weight: 500; }
+    .card .detail li .item-desc { color: var(--fg2); text-align: right; font-size: 0.75rem; }
+
+    .card.open { cursor: default; }
+    .card.open .expand-icon { transform: rotate(45deg); }
+    .card.open .detail { display: block; }
+
+    /* Color themes */
+    .card.blue    { background: var(--blue);    border-color: var(--blue-border); }
+    .card.green   { background: var(--green);   border-color: var(--green-border); }
+    .card.purple  { background: var(--purple);  border-color: var(--purple-border); }
+    .card.red     { background: var(--red);     border-color: var(--red-border); }
+    .card.orange  { background: var(--orange);  border-color: var(--orange-border); }
+    .card.blue h3    { color: var(--blue-border); }
+    .card.green h3   { color: var(--green-border); }
+    .card.purple h3  { color: var(--purple-border); }
+    .card.red h3     { color: var(--red-border); }
+    .card.orange h3  { color: var(--orange-border); }
+    .card.blue .detail li .item-name    { color: #79c0ff; }
+    .card.green .detail li .item-name   { color: #7ee787; }
+    .card.purple .detail li .item-name  { color: #d2a8ff; }
+    .card.red .detail li .item-name     { color: #ff7b72; }
+    .card.orange .detail li .item-name  { color: #d29922; }
+
+    /* ── Capability table ── */
+    .cap-table {
+      width: 100%; border-collapse: collapse; font-size: 0.85rem;
+      margin-top: 1.5rem;
+    }
+    .cap-table th, .cap-table td {
+      padding: 0.6rem 0.8rem; border: 1px solid var(--border);
+      text-align: left;
+    }
+    .cap-table th { background: #161b22; color: var(--accent); font-weight: 600; }
+    .cap-table td:first-child { font-weight: 500; color: var(--fg); }
+    .cap-table td:last-child { color: var(--fg2); font-size: 0.8rem; }
+    .cap-table tr:hover td { background: rgba(255,255,255,0.03); }
+
+    /* ── Links row ── */
+    .links {
+      display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center;
+      margin-top: 1.5rem;
+    }
+    .links a {
+      padding: 0.4rem 1rem; border: 1px solid var(--border); border-radius: 6px;
+      font-size: 0.85rem; transition: border-color var(--transition);
+    }
+    .links a:hover { border-color: var(--accent); text-decoration: none; }
   </style>
 </head>
 <body>
 
-<h1><span>🧬</span> SomatoMind</h1>
+<h1>🧬 SomatoMind</h1>
 <p class="subtitle"><em>Somato + Mind — 形态塑造心智</em></p>
 <p class="tagline">Exploring the structure of intelligence through computational experiments. Building toward a deployable Brain for embodied agents.</p>
 
+<!-- ═══════════════════ Fast Loop ═══════════════════ -->
+<div class="zone-label">⚡ Fast Loop (Reactive) <span class="timescale">ms — s</span></div>
+<div class="card-grid wide" id="fast-loop"></div>
+
+<!-- ═══════════════════ Slow Loop ═══════════════════ -->
+<div class="zone-label">🧠 Slow Loop (Deliberative) <span class="timescale">s — min</span></div>
+<div class="card-grid wide" id="slow-loop"></div>
+
+<!-- ═══════════════════ Meta Layer ═══════════════════ -->
+<div class="zone-label">🔍 Meta-Cognitive Layer <span class="timescale">min — hour</span></div>
+<div class="card-grid" id="meta-layer"></div>
+
+<!-- ═══════════════════ Capability Mapping ═══════════════════ -->
 <div class="section">
-  <h2>🏗️ Cognitive Architecture</h2>
-  <div class="diagram" id="diagram">
-    <canvas id="archCanvas" width="996" height="680"></canvas>
-    <div class="caption">
-      <span style="color:#58a6ff;">Fast Loop ↻</span>
-      <span style="color:#8b949e;">Perception → Memory → Policy → Action</span>
-    </div>
-    <div class="caption">
-      <span style="color:#d2a8ff;">Slow Loop ↺</span>
-      <span style="color:#8b949e;">Episodic → Reasoning → Planning → Reflection (modifies fast loop)</span>
-    </div>
-    <div class="caption">
-      <span style="color:#f85149;">Meta-Cognitive Layer</span>
-      <span style="color:#8b949e;">→ triggers plasticity on failure</span>
-    </div>
-  </div>
+  <h2>🧩 能力映射 / Capability Mapping</h2>
+  <table class="cap-table">
+    <thead>
+      <tr><th>能力</th><th>对应模块</th><th>功能说明</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>👁️ 观察力</td><td>Perception + Attention</td><td>从复杂信息中快速提取关键特征，注意力筛选</td></tr>
+      <tr><td>🗂️ 记忆力</td><td>Memory (4-tier)</td><td>感觉缓冲→工作记忆→情景记忆→程序记忆，多时间尺度</td></tr>
+      <tr><td>🧮 计算力</td><td>Reasoning</td><td>符号逻辑推理 + 概率推理，精确决策</td></tr>
+      <tr><td>🔗 推理力</td><td>Planning + Reflection</td><td>多步规划搜索 + 元认知反思评估</td></tr>
+      <tr><td>🧭 空间力</td><td>Spatial + World Model</td><td>心理模拟器，内部推演"如果我向左走会怎样"</td></tr>
+      <tr><td>💡 创造力</td><td>Creativity + Plasticity</td><td>内在动机探索 + 结构可塑性，产生新策略</td></tr>
+    </tbody>
+  </table>
 </div>
 
-<div class="section">
-  <h2>🧪 Experiment Roadmap</h2>
-  <ul>
-    <li><strong>E1</strong> — Reflection Loop <span class="status">🔲 Not started</span></li>
-    <li><strong>E2</strong> — Architecture Comparison <span class="status">🔲 Not started</span></li>
-    <li><strong>E3</strong> — Self-Evolving Agents <span class="status">🔲 Not started</span></li>
-  </ul>
-</div>
-
-<div class="section">
-  <h2>📎 Links</h2>
-  <ul>
-    <li><a href="https://github.com/zhangshuaiqing/SomatoMind">GitHub Repository</a></li>
-    <li><a href="https://github.com/zhangshuaiqing/SomatoMind/discussions">Discussions</a></li>
-    <li><a href="https://github.com/zhangshuaiqing/SomatoMind/issues">Issues</a></li>
-    <li><a href="https://github.com/zhangshuaiqing/SomatoMind/blob/main/docs/architecture.md">Architecture Document</a></li>
-  </ul>
+<!-- ═══════════════════ Links ═══════════════════ -->
+<div class="links">
+  <a href="https://github.com/zhangshuaiqing/SomatoMind">GitHub</a>
+  <a href="https://github.com/zhangshuaiqing/SomatoMind/discussions">Discussions</a>
+  <a href="https://github.com/zhangshuaiqing/SomatoMind/issues">Issues</a>
+  <a href="https://github.com/zhangshuaiqing/SomatoMind/blob/main/README.md">README</a>
+  <a href="https://github.com/zhangshuaiqing/SomatoMind/blob/main/docs/architecture.md">Architecture Doc</a>
 </div>
 
 <div class="footer">
@@ -136,206 +188,139 @@
 </div>
 
 <script>
-(function() {
-  const canvas = document.getElementById('archCanvas');
-  const ctx = canvas.getContext('2d');
-  const W = 996, H = 680;
-  canvas.width = W * 2; canvas.height = H * 2;
-  ctx.scale(2, 2);
-  canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+// ── Data ──────────────────────────────────────────
+const MODULES = {
+  perception: {
+    title: 'Perception', color: 'blue',
+    summary: '将各类感知输入适配到统一的内部表征空间',
+    items: [
+      ['Adapter', '将任意环境观测（GridWorld / ROS2 / 相机）归一化为内部 dict'],
+      ['Attention', '自底向上 + 自顶向下注意力，筛选关键特征'],
+      ['World Model', '前向预测模型："如果我向左走，会看到什么？"'],
+    ]
+  },
+  memory: {
+    title: 'Memory System', color: 'green',
+    summary: '四层级记忆系统，从毫秒级缓冲区到永久程序记忆',
+    items: [
+      ['Sensory Buffer', '毫秒级，保留原始感知数据'],
+      ['Working Memory', '秒级，结构化任务上下文（目标、怀疑、计划栈）'],
+      ['Episodic Memory', '分钟级，存储完整轨迹（观测→动作→结果→反思标签）'],
+      ['Procedural Memory', '永久级，编码为网络权重或子策略的技能库'],
+    ]
+  },
+  cognition: {
+    title: 'Cognition', color: 'purple',
+    summary: '六种高级认知能力',
+    items: [
+      ['Reasoning', '符号推理（规则演绎）+ 概率推理（贝叶斯不确定性处理）'],
+      ['Planning', '多步搜索 + 目标分解 + 重规划'],
+      ['Reflection', '元认知：回顾轨迹 → 自我评价 → 策略调整（Reflexion）'],
+      ['Spatial', '空间推理（自我中心+地图视角）+ 心理模拟器'],
+      ['Creativity', '内在动机驱动的探索 + 反事实思考'],
+      ['Policy', '从当前状态到动作的映射（快回路的主干）'],
+    ]
+  },
+  action: {
+    title: 'Action', color: 'green',
+    summary: '将内部决策映射为环境可执行的动作',
+    items: [
+      ['Policy Bridge', '抽象决策到具体动作序列的映射'],
+      ['Motor Control', 'ROS2 / Gazebo / 实物机器人接口'],
+      ['Feedback Loop', '动作执行结果 → 感知层（形成闭环）'],
+    ]
+  },
+  environment: {
+    title: 'Environment', color: 'orange',
+    summary: '环境反馈闭环，支撑有边学习与群体智能',
+    items: [
+      ['GridWorld', 'Phase 1 实验床：full / local / fog_of_war 观测'],
+      ['Dynamic Obstacles', 'Phase 1 Feature 3：环境时变'],
+      ['Multi-agent', 'Phase 3：Stigmergy / Neural Bridge 群体实验'],
+      ['ROS2 + Gazebo', 'Phase 3：连续控制仿真 + 实物过渡'],
+    ]
+  },
+  plasticity: {
+    title: 'Plasticity', color: 'orange',
+    summary: '部署后持续自我进化的三种机制',
+    items: [
+      ['EWC', 'Elastic Weight Consolidation：保护重要权重不遗忘'],
+      ['Hebbian', '局部学习规则："fire together, wire together"'],
+      ['Structural', '动态增删神经元或连接，对应生物的结构可塑性'],
+    ]
+  },
+  meta: {
+    title: 'Meta Monitor', color: 'red',
+    summary: '监控整体表现，低效时触发可塑性重组织',
+    items: [
+      ['Performance Monitor', '跟踪成功率、步数等指标'],
+      ['Trigger', '表现低于阈值时，激活 Plasticity 模块'],
+      ['Self-Evaluation', '评估反思质量：反思是否真正改变了行为？'],
+    ]
+  },
+};
 
-  // ── Colors ──
-  const C = {
-    bg:       '#161b22',
-    border:   '#30363d',
-    text:     '#c9d1d9',
-    muted:    '#8b949e',
-    blue:     '#1f3a5f', blueB: '#58a6ff',
-    green:    '#1f3a2f', greenB:'#3fb950',
-    purple:   '#2d1b69', purpleB:'#d2a8ff',
-    red:      '#3d1a1a', redB:  '#f85149',
-    orange:   '#3d2e00', orangeB:'#d29922',
-    yellow:   '#2d1b00', yellowB:'#e3b341',
+// ── Build Cards ───────────────────────────────────
+function cardHTML(id, m) {
+  const itemsHTML = m.items.map(([name, desc]) =>
+    `<li><span class="item-name">${name}</span><span class="item-desc">${desc}</span></li>`
+  ).join('');
+  return `
+    <div class="card ${m.color}" data-module="${id}" onclick="toggleCard(this)">
+      <h3>${m.title} <span class="expand-icon">+</span></h3>
+      <div class="summary">${m.summary}</div>
+      <div class="detail"><ul>${itemsHTML}</ul></div>
+    </div>
+  `;
+}
+
+function flowArrow(dir) {
+  const arrows = {
+    right: '→', right_dashed: '⇢', bidir: '↔', down: '↓',
   };
+  const cls = dir === 'bidir' ? 'flow-arrow bidir' : 'flow-arrow' + (dir.includes('dashed') ? ' dashed' : '');
+  return `<div class="${cls}">${arrows[dir] || '→'}</div>`;
+}
 
-  function rrect(x,y,w,h,r,fill,stroke) {
-    ctx.beginPath(); ctx.roundRect(x,y,w,h,r);
-    if (fill) { ctx.fillStyle = fill; ctx.fill(); }
-    if (stroke) { ctx.strokeStyle = stroke; ctx.stroke(); }
-  }
+// Fast loop: Perception → [Memory] → [Cognition] → Action → Environment
+const fastLoop = document.getElementById('fast-loop');
+fastLoop.innerHTML =
+  cardHTML('perception', MODULES.perception) +
+  flowArrow('right') +
+  cardHTML('memory', MODULES.memory) +
+  flowArrow('bidir') +
+  cardHTML('cognition', MODULES.cognition) +
+  flowArrow('right') +
+  cardHTML('action', MODULES.action) +
+  flowArrow('right') +
+  cardHTML('environment', MODULES.environment);
 
-  function txt(x,y,text,color,size) {
-    ctx.fillStyle = color || C.text;
-    ctx.font = (size||14)+'px -apple-system, Segoe UI, Helvetica, sans-serif';
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(text, x, y);
-  }
+// Slow loop: Environment feedback
+const slowLoop = document.getElementById('slow-loop');
+slowLoop.innerHTML =
+  flowArrow('right_dashed') +
+  `<div style="flex:0; font-size:0.8rem; color:var(--fg2); padding:0 0.25rem;">feedback</div>` +
+  flowArrow('right_dashed');
 
-  function txl(x,y,text,color,size) {
-    ctx.fillStyle = color || C.muted;
-    ctx.font = (size||12)+'px -apple-system, Segoe UI, Helvetica, sans-serif';
-    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-    ctx.fillText(text, x, y);
-  }
+// Meta layer: Meta Monitor → Plasticity
+const metaLayer = document.getElementById('meta-layer');
+metaLayer.innerHTML =
+  cardHTML('meta', MODULES.meta) +
+  flowArrow('right') +
+  cardHTML('plasticity', MODULES.plasticity);
 
-  function arrow(x1,y1,x2,y2,color,dash) {
-    if (dash) ctx.setLineDash([6,4]); else ctx.setLineDash([]);
-    ctx.strokeStyle = color || C.muted;
-    ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
-    // arrowhead
-    const a = Math.atan2(y2-y1, x2-x1);
-    ctx.fillStyle = color || C.muted;
-    ctx.beginPath();
-    ctx.moveTo(x2, y2);
-    ctx.lineTo(x2 - 8*Math.cos(a-0.4), y2 - 8*Math.sin(a-0.4));
-    ctx.lineTo(x2 - 8*Math.cos(a+0.4), y2 - 8*Math.sin(a+0.4));
-    ctx.closePath(); ctx.fill();
-    ctx.setLineDash([]);
-  }
+// ── Toggle ────────────────────────────────────────
+function toggleCard(el) {
+  const isOpen = el.classList.toggle('open');
+  // close others in same row
+  const siblings = el.parentElement.querySelectorAll('.card.open');
+  siblings.forEach(c => { if (c !== el) c.classList.remove('open'); });
+}
 
-  function bidir(x1,y1,x2,y2,color) {
-    arrow(x1,y1,x2,y2,color,true);
-    const a = Math.atan2(y1-y2, x1-x2);
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(x1 - 6*Math.cos(a-0.4), y1 - 6*Math.sin(a-0.4));
-    ctx.lineTo(x1 - 6*Math.cos(a+0.4), y1 - 6*Math.sin(a+0.4));
-    ctx.closePath(); ctx.fill();
-  }
-
-  // ── Clear ──
-  ctx.clearRect(0,0,W,H);
-  ctx.fillStyle = C.bg; ctx.fillRect(0,0,W,H);
-
-  // ── Background zones ──
-  ctx.setLineDash([6,3]); ctx.strokeStyle = C.border; ctx.lineWidth = 1; ctx.globalAlpha = 0.5;
-  rrect(20,55,490,300,12,null,C.border);
-  rrect(20,380,490,260,12,null,C.border);
-  rrect(530,55,446,585,12,null,C.border);
-  ctx.setLineDash([]); ctx.globalAlpha = 1;
-
-  txl(28,72,'Fast Loop — ms to s', C.muted, 13);
-  txl(28,397,'Meta-Cognitive Layer — min to hour', C.muted, 13);
-  txl(538,72,'Slow Loop — s to min', C.muted, 13);
-
-  // ── Perception ──
-  rrect(40,95,210,110,8,C.blue,C.blueB);
-  txt(145,120,'Perception',C.text,16);
-  txl(48,142,'Adapter — normalize observation',C.muted,12);
-  txl(48,160,'Attention — selective focus',C.muted,12);
-  txl(48,178,'World Model — predict next state',C.muted,12);
-
-  // ── Memory ──
-  rrect(40,240,210,155,8,C.green,C.greenB);
-  txt(145,268,'Memory System',C.text,15);
-  txl(48,292,'Sensory Buffer (ms)',C.muted,12);
-  txl(48,312,'Working Memory (s)',C.muted,12);
-  txl(48,332,'Episodic Memory (min)',C.muted,12);
-  txl(48,352,'Procedural Memory (permanent)',C.muted,12);
-
-  // ── Cognition ──
-  rrect(285,95,225,300,8,C.purple,C.purpleB);
-  txt(397,122,'Cognition',C.text,16);
-  const cogItems = [
-    'Reasoning (symbolic + probabilistic)',
-    'Planning (search + decompose)',
-    'Reflection / Metacognition',
-    'Spatial (mental simulation)',
-    'Creativity (exploration)',
-    'Attention (selective focus)',
-    'Policy (action selection)',
-  ];
-  cogItems.forEach((item,i) => txl(293,150+i*28,item,C.muted,12));
-
-  // cognitive capability badge
-  txt(397,370,'观察力 · 记忆力 · 计算力 · 推理力 · 空间力 · 创造力',C.purpleB,12);
-
-  // ── Action ──
-  rrect(160,400,180,75,8,C.green,C.greenB);
-  txt(250,425,'Action / Motor Bridge',C.text,16);
-  txl(168,455,'GridWorld → ROS2 → Robot',C.muted,12);
-
-  // ── Plasticity ──
-  rrect(40,465,210,140,8,C.orange,C.orangeB);
-  txt(145,493,'Plasticity',C.text,15);
-  txl(48,518,'EWC — protect important weights',C.muted,12);
-  txl(48,540,'Hebbian — local learning rules',C.muted,12);
-  txl(48,562,'Structural — add/remove connections',C.muted,12);
-
-  // ── Meta Monitor ──
-  rrect(285,430,225,85,8,C.red,C.redB);
-  txt(397,460,'Meta-Cognitive Monitor',C.text,15);
-  txt(397,485,'triggers plasticity on failure',C.muted,12);
-
-  // ── Environment ──
-  rrect(550,95,410,530,8,C.yellow,C.yellowB);
-  txt(755,122,'Environment',C.text,16);
-  const envItems = [
-    'Observation (full / local / fog)',
-    'Reward / Goal Achievement',
-    'Dynamic Obstacles',
-    'Multi-agent Stigmergy',
-    'ROS2 + Gazebo (Phase 3)',
-  ];
-  envItems.forEach((item,i) => txl(560,150+i*26,item,C.muted,12));
-
-  // capability mapping
-  txt(755,310,'Capability Mapping',C.text,14);
-  const caps = [
-    'Observe   Attention + World Model',
-    'Memory   4-tier hierarchy',
-    'Reasoning   Symbolic + Probabilistic',
-    'Space   Mental simulation + Spatial rep',
-    'Creativity   Exploration + Struct plasticity',
-  ];
-  caps.forEach((c,i) => txl(560,340+i*28,c,C.muted,12));
-
-  // ── Arrows ──
-
-  // Environment → Perception (observation)
-  arrow(550,130,250,130,C.yellowB,true);
-  txl(380,122,'observation',C.muted,10);
-
-  // Perception → Cognition
-  arrow(250,150,285,150,C.muted);
-
-  // Perception → Memory
-  arrow(145,205,145,240,C.muted);
-
-  // Cognition ↔ Memory (bidirectional)
-  bidir(285,290,250,290,C.purpleB);
-
-  // Memory → Action
-  arrow(145,395,145,400, C.muted);
-  arrow(145,415,250,415, C.muted);
-  arrow(250,415,250,400, C.muted);
-
-  // Cognition → Action
-  arrow(397,395,397,415,C.muted);
-  arrow(397,415,340,415,C.muted);
-
-  // Action → Environment
-  arrow(340,437,550,437,C.muted);
-  txl(435,430,'action',C.muted,10);
-
-  // Environment → Perception (feedback)
-  arrow(550,170,250,170,C.yellowB,true);
-  txl(380,162,'feedback',C.muted,10);
-
-  // Meta Monitor → Plasticity
-  arrow(285,472,250,472,C.redB);
-  txl(268,464,'trigger',C.muted,10);
-
-  // ── Connector lines on Environment side ──
-  ctx.strokeStyle = C.muted; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(250,130); ctx.lineTo(250,150); ctx.stroke();
-
-  // canvas note text
-  txt(480,660,'SomatoMind Brain — Multi-timescale Cognitive Architecture',C.muted,11);
-
-})();
+// ── Add zone outlines ─────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  // Nothing special needed — the zone labels and card-grids naturally separate
+});
 </script>
-
 </body>
 </html>
