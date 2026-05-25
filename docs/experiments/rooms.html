@@ -401,12 +401,13 @@ function bfsReachable(grid, w, h, start, goal, doorsOpen) {
 
 // ── Auto-repair path ──
 function autoRepairPath(env) {
-  // Simple strategy: BFS without wall restrictions to find a path,
-  // then clear any walls on that path
-  const visited = new Map(); // key -> previous key
+  // BFS from start to goal, ignoring walls and closed doors.
+  // Then clear whatever blocks the found path.
+  const prev = new Map();
   const queue = [[env.agentPos[0], env.agentPos[1]]];
   const startKey = `${env.agentPos[0]},${env.agentPos[1]}`;
-  visited.set(startKey, null);
+  const goalKey = `${env.goalPos[0]},${env.goalPos[1]}`;
+  prev.set(startKey, null);
   const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
   let found = false;
   
@@ -416,8 +417,8 @@ function autoRepairPath(env) {
       const nr = r + dr, nc = c + dc;
       const key = `${nr},${nc}`;
       if (nr < 0 || nr >= env.h || nc < 0 || nc >= env.w) continue;
-      if (visited.has(key)) continue;
-      visited.set(key, [r, c]);
+      if (prev.has(key)) continue;
+      prev.set(key, [r, c]);
       if (nr === env.goalPos[0] && nc === env.goalPos[1]) {
         found = true;
         break;
@@ -426,22 +427,42 @@ function autoRepairPath(env) {
     }
   }
   
-  if (!found) return;
+  if (!found) {
+    logMsg('无法找到任何可达路径', 'error');
+    return;
+  }
   
-  // Trace path back and clear walls
-  let cur = `${env.goalPos[0]},${env.goalPos[1]}`;
-  const path = [];
-  while (cur !== startKey) {
-    path.push(cur);
-    cur = visited.get(cur);
-    if (!cur) break;
-    const [pr, pc] = cur.split(',').map(Number);
-    const idx = pr * env.w + pc;
-    if (env.grid[idx] === T.WALL) {
+  // Trace back from goal to start, clearing obstacles
+  let cleared = 0;
+  let curKey = goalKey;
+  const pathCells = [];
+  
+  // Walk back through prev map to build the path
+  while (curKey !== startKey) {
+    const prevPos = prev.get(curKey);
+    if (!prevPos) break;
+    const [pr, pc] = curKey.split(',').map(Number);
+    pathCells.push([pr, pc]);
+    curKey = `${prevPos[0]},${prevPos[1]}`;
+  }
+  
+  // Now clear walls and open doors along the path
+  for (const [r, c] of pathCells) {
+    const idx = r * env.w + c;
+    const tile = env.grid[idx];
+    if (tile === T.WALL) {
       env.grid[idx] = T.EMPTY;
+      cleared++;
+    }
+    // Also open doors
+    if (tile === T.DOOR_CLOSED) {
+      env.doorState[`${r},${c}`] = true;
+      env.openedDoors++;
+      cleared++;
     }
   }
-  logMsg(`清除了 ${path.length} 格障碍物打通路径`, 'info');
+  
+  logMsg(`自动修复完成：打通 ${cleared} 格障碍`, 'success');
 }
 
 function markVisited(r, c) {
