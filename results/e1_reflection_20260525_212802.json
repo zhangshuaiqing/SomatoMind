@@ -1,0 +1,51 @@
+{
+  "config": {
+    "num_episodes": 100,
+    "grid_size": 8,
+    "obstacle_ratio": 0.25,
+    "max_steps": 150,
+    "seed": 42,
+    "modes": [
+      "local",
+      "fog_of_war"
+    ]
+  },
+  "results": [
+    {
+      "agent": "react",
+      "mode": "local",
+      "rate": 1.0,
+      "ok": 100,
+      "n": 100,
+      "avg_steps": 1.81,
+      "reflections": 0
+    },
+    {
+      "agent": "reflective",
+      "mode": "local",
+      "rate": 1.0,
+      "ok": 100,
+      "n": 100,
+      "avg_steps": 1.04,
+      "reflections": 0
+    },
+    {
+      "agent": "react",
+      "mode": "fog_of_war",
+      "rate": 1.0,
+      "ok": 100,
+      "n": 100,
+      "avg_steps": 1.81,
+      "reflections": 0
+    },
+    {
+      "agent": "reflective",
+      "mode": "fog_of_war",
+      "rate": 1.0,
+      "ok": 100,
+      "n": 100,
+      "avg_steps": 1.04,
+      "reflections": 0
+    }
+  ]
+}

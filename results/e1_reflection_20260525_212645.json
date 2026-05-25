@@ -1,0 +1,71 @@
+{
+  "experiment": "e1_reflection",
+  "config": {
+    "num_episodes": 30,
+    "grid_size": 10,
+    "obstacle_ratio": 0.2,
+    "seed": 42
+  },
+  "results": [
+    {
+      "agent": "react",
+      "mode": "full",
+      "episodes": 30,
+      "successes": 30,
+      "success_rate": 1.0,
+      "avg_steps_to_goal": 40.8,
+      "total_steps": 1224,
+      "reflections": 0
+    },
+    {
+      "agent": "reflective",
+      "mode": "full",
+      "episodes": 30,
+      "successes": 30,
+      "success_rate": 1.0,
+      "avg_steps_to_goal": 1.1,
+      "total_steps": 33,
+      "reflections": 0
+    },
+    {
+      "agent": "react",
+      "mode": "local",
+      "episodes": 30,
+      "successes": 30,
+      "success_rate": 1.0,
+      "avg_steps_to_goal": 2.0,
+      "total_steps": 60,
+      "reflections": 0
+    },
+    {
+      "agent": "reflective",
+      "mode": "local",
+      "episodes": 30,
+      "successes": 30,
+      "success_rate": 1.0,
+      "avg_steps_to_goal": 1.9,
+      "total_steps": 58,
+      "reflections": 0
+    },
+    {
+      "agent": "react",
+      "mode": "fog_of_war",
+      "episodes": 30,
+      "successes": 30,
+      "success_rate": 1.0,
+      "avg_steps_to_goal": 2.0,
+      "total_steps": 60,
+      "reflections": 0
+    },
+    {
+      "agent": "reflective",
+      "mode": "fog_of_war",
+      "episodes": 30,
+      "successes": 30,
+      "success_rate": 1.0,
+      "avg_steps_to_goal": 1.9,
+      "total_steps": 58,
+      "reflections": 0
+    }
+  ]
+}
