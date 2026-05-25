@@ -154,7 +154,30 @@
 
 <!-- ═══════════════════ Meta Layer ═══════════════════ -->
 <div class="zone-label">🔍 Meta-Cognitive Layer <span class="timescale">min — hour</span></div>
-<div class="card-grid" id="meta-layer"></div>
+<div class="card-grid wide" id="meta-layer"></div>
+
+<!-- ═══════════════════ Architecture Table ═══════════════════ -->
+<div class="section">
+  <h2>📋 认知架构详述 / Architecture Breakdown</h2>
+  <table class="cap-table">
+    <thead>
+      <tr><th style="width:14%">层级</th><th style="width:16%">模块</th><th>描述</th><th style="width:12%">数据流方向</th></tr>
+    </thead>
+    <tbody>
+      <tr><td rowspan="4"><strong>⚡ Fast Loop</strong><br><span style="font-size:0.75rem;color:var(--fg2)">ms — s</span></td>
+          <td>Perception</td><td>将环境观测转换为内部表征。包含感知适配器（归一化各类输入）、注意力机制（筛选关键特征）、世界模型（前向预测）</td><td>→ Memory + Cognition</td></tr>
+      <tr><td>Memory System</td><td>四层级记忆：Sensory Buffer（毫秒原始数据）、Working Memory（秒级任务上下文）、Episodic Memory（分钟级轨迹）、Procedural Memory（永久技能）</td><td>↔ Cognition</td></tr>
+      <tr><td>Cognition</td><td>六种高级认知模块：Reasoning（符号+概率推理）、Planning（多步搜索+目标分解）、Reflection（元认知反思）、Spatial（空间推理+心理模拟）、Creativity（探索+反事实）、Policy（动作选择）</td><td>→ Action</td></tr>
+      <tr><td>Action</td><td>将决策映射为环境可执行的动作，包含策略桥接、运动控制和反馈闭环</td><td>→ Environment</td></tr>
+      <tr><td rowspan="2"><strong>🧠 Slow Loop</strong><br><span style="font-size:0.75rem;color:var(--fg2)">s — min</span></td>
+          <td>Environment</td><td>环境的反馈回路。支持 GridWorld（full/local/fog 观测）、动态障碍物、多 Agent Stigmergy、ROS2+Gazebo 仿真</td><td>⇢ Perception (feedback)</td></tr>
+      <tr><td>Reflection</td><td>慢回路核心：从 Episodic Memory 调取轨迹 → 推理评估 → 规划调整 → 修正快回路行为</td><td>⇢ Cognition (modify)</td></tr>
+      <tr><td rowspan="2"><strong>🔍 Meta Layer</strong><br><span style="font-size:0.75rem;color:var(--fg2)">min — hour</span></td>
+          <td>Meta Monitor</td><td>监控整体表现指标，当成功率低于阈值时触发自我修改。同时评估反思质量——"反思是否真正改变了行为？"</td><td>→ Plasticity</td></tr>
+      <tr><td>Plasticity</td><td>部署后自我进化的三种机制：EWC（保护重要权重防遗忘）、Hebbian（局部学习规则）、Structural（动态增删神经元或连接）</td><td>→ Brain (structural)</td></tr>
+    </tbody>
+  </table>
+</div>
 
 <!-- ═══════════════════ Capability Mapping ═══════════════════ -->
 <div class="section">
@@ -311,10 +334,7 @@ metaLayer.innerHTML =
 
 // ── Toggle ────────────────────────────────────────
 function toggleCard(el) {
-  const isOpen = el.classList.toggle('open');
-  // close others in same row
-  const siblings = el.parentElement.querySelectorAll('.card.open');
-  siblings.forEach(c => { if (c !== el) c.classList.remove('open'); });
+  el.classList.toggle('open');
 }
 
 // ── Add zone outlines ─────────────────────────────
