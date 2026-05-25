@@ -5,6 +5,11 @@ Purpose:
   Compare a pure ReAct agent against a Reflective agent (with working memory
   and verbal self-reflection) in a partially observable GridWorld.
 
+Dependencies:
+  This experiment requires the navigation-agent GridWorld environment,
+  included as a git submodule at env/gridworld/.
+  Initialize with: git submodule update --init --recursive
+
 Hypothesis:
   The Reflective agent will achieve higher success rates under partial
   observability, because working memory maintains task context and
@@ -25,10 +30,11 @@ from collections import deque
 
 import numpy as np
 
-NAV_AGENT_PATH = os.path.expanduser("/media/zsq-508/data/project/navigation-agent")
-if NAV_AGENT_PATH not in sys.path:
-    sys.path.insert(0, NAV_AGENT_PATH)
-    sys.path.insert(0, os.path.join(NAV_AGENT_PATH, "src"))
+# ── Import GridWorld from submodule ──────────────────
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+SUBMOUDLE_PATH = os.path.join(PROJECT_ROOT, "env", "gridworld", "src")
+if SUBMOUDLE_PATH not in sys.path:
+    sys.path.insert(0, SUBMOUDLE_PATH)
 
 from env.gridworld import GridWorld, CellType
 
