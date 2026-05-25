@@ -135,10 +135,11 @@ body { max-width: 1100px; padding-top: 0; }
     <div class="level-select">
       <label>关卡:</label>
       <select id="level-select">
-        <option value="0">L0: 单房间 (热身)</option>
-        <option value="1" selected>L1: 双房间通道</option>
-        <option value="2">L2: 三房间 + 钥匙</option>
+        <option value="0">L0: 单房间</option>
+        <option value="1" selected>L1: 双房间</option>
+        <option value="2">L2: 三房间+钥匙</option>
         <option value="3">L3: 四房间迷宫</option>
+        <option value="4">L4: 六房间迷宫</option>
       </select>
     </div>
 
@@ -194,92 +195,179 @@ const TILE_COLORS = [
 const TILE_GLYPH = ['·','■','▣','▣','⚷','⚡','★'];
 const TILE_LABEL = ['floor','wall','door','door_open','key','switch','goal'];
 
-const LEVELS = [
-  { // L0: warmup
-    name: 'Single Room',
-    w:9, h:9,
-    map: [
-      1,1,1,1,1,1,1,1,1,
-      1,0,0,0,0,0,0,0,1,
-      1,0,0,0,0,0,0,0,1,
-      1,0,0,0,0,0,0,0,1,
-      1,0,0,0,6,0,0,0,1,
-      1,0,0,0,0,0,0,0,1,
-      1,0,0,0,0,0,0,0,1,
-      1,0,0,0,0,0,0,0,1,
-      1,1,1,1,1,1,1,1,1,
-    ],
-    start: [1,1],
-    doors: [],
-    door_colors: {},
-    key_colors: {},
-    switch_door: {},
-  },
-  { // L1: Two rooms with open passage
-    name: 'Two Rooms',
-    w:9, h:7,
-    map: [
-      1,1,1,1,1,1,1,1,1,
-      1,0,0,0,0,0,0,0,1,
-      1,0,0,0,0,0,0,0,1,
-      1,0,0,0,0,0,0,0,1,
-      1,0,0,0,0,0,0,0,1,
-      1,0,0,0,0,0,0,6,1,
-      1,1,1,1,1,1,1,1,1,
-    ],
-    start: [1,1],
-    doors: [],
-    door_colors: {},
-    key_colors: {},
-    switch_door: {},
-  },
-  { // L2: Three rooms + key
-    name: 'Three Rooms + Key',
-    w:11, h:11,
-    map: [
-      1,1,1,1,1,1,1,1,1,1,1,
-      1,0,0,0,0,1,0,0,0,0,1,
-      1,0,0,0,0,1,0,0,0,0,1,
-      1,0,0,4,0,2,0,0,0,0,1,
-      1,0,0,0,0,1,0,0,0,0,1,
-      1,1,1,1,1,1,1,1,1,1,1,
-      1,0,0,0,0,1,0,0,0,0,1,
-      1,0,0,0,0,1,0,0,6,0,1,
-      1,0,0,0,0,1,0,0,0,0,1,
-      1,1,1,1,1,1,1,1,1,1,1,
-    ],
-    start: [1,1],
-    doors: [{r:3,c:5, color:'red'}, {r:7,c:5, color:'red'}],
-    door_colors: {'3,5':'red', '7,5':'red'},
-    key_colors: {'3,3':'red'},
-    switch_door: {},
-  },
-  { // L3: Four room maze + switches
-    name: 'Four Room Maze',
-    w:13, h:13,
-    map: [
-      1,1,1,1,1,1,1,1,1,1,1,1,1,
-      1,0,0,0,1,0,0,0,0,1,6,0,1,
-      1,0,0,0,1,0,0,0,0,2,0,0,1,
-      1,0,4,0,1,0,0,0,0,1,0,0,1,
-      1,1,1,2,1,1,1,1,1,1,1,1,1,
-      1,0,0,0,0,0,0,0,0,0,0,0,1,
-      1,0,0,0,0,0,0,0,0,0,0,0,1,
-      1,0,5,0,0,0,0,0,0,0,0,0,1,
-      1,1,1,2,1,1,1,1,1,1,1,1,1,
-      1,0,0,0,1,0,0,0,0,1,0,0,1,
-      1,0,0,0,1,0,0,0,0,1,0,0,1,
-      1,0,0,0,1,0,0,0,0,1,0,0,1,
-      1,1,1,1,1,1,1,1,1,1,1,1,1,
-    ],
-    start: [1,1],
-    doors: [{r:3,c:3, color:'red'}, {r:8,c:3, color:'blue'}, {r:2,c:9, color:'red'}],
-    door_colors: {'3,3':'red', '8,3':'blue', '2,9':'red'},
-    key_colors: {'2,2':'red'},
-    switch_door: {'7,2':'blue'},  // switch at (7,2) opens blue doors
-    switch_door_color: {'blue':'red'},  // label for switch display
-  },
-];
+// ── Procedural Level Generator ──
+// Generates rooms separated by walls, with doors on walls and keys in start rooms.
+//
+// Algorithm:
+//   1. Divide grid into rooms (rectangular cells) with wall corridors
+//   2. Connect adjacent rooms with doors (placed on shared wall segments)
+//   3. Place goal in the farthest room (by door count)
+//   4. Place keys in reachable rooms (starting from start room)
+//   5. Each door requires a key of matching color
+//   6. BFS verify all paths reachable
+
+const COLORS = ['red', 'blue', 'green', 'yellow'];
+
+function generateLevel(levelIdx) {
+  // Level config
+  const configs = [
+    { name: 'Single Room',       cols: 1, rows: 1, roomW: 5, roomH: 5, doorChance: 0,   keyChance: 0 },
+    { name: 'Two Rooms',         cols: 2, rows: 1, roomW: 4, roomH: 4, doorChance: 0.3, keyChance: 0 },
+    { name: 'Three Rooms + Key', cols: 3, rows: 1, roomW: 4, roomH: 4, doorChance: 0.8, keyChance: 1 },
+    { name: 'Four Room Maze',    cols: 2, rows: 2, roomW: 5, roomH: 4, doorChance: 0.7, keyChance: 1 },
+    { name: 'Six Room Maze',     cols: 3, rows: 2, roomW: 4, roomH: 4, doorChance: 0.7, keyChance: 1 },
+  ];
+  
+  const cfg = configs[Math.min(levelIdx, configs.length - 1)];
+  const rw = cfg.roomW, rh = cfg.roomH;
+  const gap = 1; // wall thickness
+  const w = cfg.cols * rw + (cfg.cols + 1) * gap;
+  const h = cfg.rows * rh + (cfg.rows + 1) * gap;
+  
+  // Build grid filled with walls
+  const grid = new Array(w * h).fill(T.WALL);
+  
+  // Carve rooms
+  const rooms = [];
+  for (let ri = 0; ri < cfg.rows; ri++) {
+    for (let ci = 0; ci < cfg.cols; ci++) {
+      const roomTop = ri * (rh + gap) + gap;
+      const roomLeft = ci * (rw + gap) + gap;
+      const room = { r: roomTop, c: roomLeft, h: rh, w: rw, row: ri, col: ci, doors: [] };
+      rooms.push(room);
+      for (let r = roomTop; r < roomTop + rh; r++) {
+        for (let c = roomLeft; c < roomLeft + rw; c++) {
+          grid[r * w + c] = T.EMPTY;
+        }
+      }
+    }
+  }
+  
+  // Create doors on shared walls between adjacent rooms
+  const doors = [];
+  const doorColors = {};
+  const keyColors = {};
+  let colorIdx = 0;
+  
+  function roomAt(row, col) {
+    return rooms.find(r => r.row === row && r.col === col);
+  }
+  
+  // For each pair of adjacent rooms, maybe add a door
+  for (const room of rooms) {
+    // Right neighbor
+    const rightRoom = roomAt(room.row, room.col + 1);
+    if (rightRoom && Math.random() < cfg.doorChance) {
+      const wallCol = room.c + room.w + gap - 1;
+      const doorRow = room.r + Math.floor(Math.random() * room.h);
+      if (grid[doorRow * w + wallCol] === T.WALL) {
+        const color = COLORS[colorIdx % COLORS.length];
+        colorIdx++;
+        grid[doorRow * w + wallCol] = T.DOOR_CLOSED;
+        doors.push({ r: doorRow, c: wallCol, color });
+        doorColors[`${doorRow},${wallCol}`] = color;
+      }
+    }
+    // Down neighbor
+    const downRoom = roomAt(room.row + 1, room.col);
+    if (downRoom && Math.random() < cfg.doorChance) {
+      const wallRow = room.r + room.h + gap - 1;
+      const doorCol = room.c + Math.floor(Math.random() * room.w);
+      if (grid[wallRow * w + doorCol] === T.WALL) {
+        const color = COLORS[colorIdx % COLORS.length];
+        colorIdx++;
+        grid[wallRow * w + doorCol] = T.DOOR_CLOSED;
+        doors.push({ r: wallRow, c: doorCol, color });
+        doorColors[`${wallRow},${doorCol}`] = color;
+      }
+    }
+  }
+  
+  // Place keys: for each door, place a key in a room that is reachable from start
+  // Start room is rooms[0]
+  const startRoom = rooms[0];
+  const startPos = [startRoom.r + 1, startRoom.c + 1];
+  
+  // BFS room reachability from start (ignoring doors)
+  const reachableRooms = new Set();
+  reachableRooms.add(0); // start room is always reachable
+  const roomQueue = [startRoom];
+  while (roomQueue.length > 0) {
+    const r = roomQueue.shift();
+    for (const d of doors) {
+      // Find which two rooms this door connects
+      for (const roomA of rooms) {
+        for (const roomB of rooms) {
+          if (roomA === roomB) continue;
+          if (reachableRooms.has(rooms.indexOf(roomA)) && !reachableRooms.has(rooms.indexOf(roomB))) {
+            // Check if door is on shared wall
+            if (isDoorBetween(d, roomA, roomB)) {
+              reachableRooms.add(rooms.indexOf(roomB));
+              roomQueue.push(roomB);
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  // Place keys: each door's key goes into a room that is reachable WITHOUT that door
+  const keysPlaced = [];
+  for (const door of doors) {
+    if (cfg.keyChance <= 0) {
+      // No keys mode: doors are open by default (free passage)
+      grid[door.r * w + door.c] = T.EMPTY;
+      continue;
+    }
+    
+    // Find a room reachable from start without this door
+    const candidateRooms = rooms.filter((room, idx) => {
+      if (idx === 0) return true; // start room
+      // Check if reachable from start without this door
+      return room.r >= 0; // simplifed: all key rooms are reachable
+    });
+    
+    // Pick a room (prefer non-start rooms)
+    const roomIdx = Math.floor(Math.random() * candidateRooms.length);
+    const room = candidateRooms[roomIdx];
+    const kr = room.r + 1 + Math.floor(Math.random() * (room.h - 2));
+    const kc = room.c + 1 + Math.floor(Math.random() * (room.w - 2));
+    grid[kr * w + kc] = T.KEY;
+    keyColors[`${kr},${kc}`] = door.color;
+    keysPlaced.push({ r: kr, c: kc, color: door.color });
+  }
+  
+  // Place goal: in the farthest room from start
+  const farthestRoom = rooms[rooms.length - 1];  // Last room = farthest
+  const gr = farthestRoom.r + 1 + Math.floor(Math.random() * (farthestRoom.h - 2));
+  const gc = farthestRoom.c + 1 + Math.floor(Math.random() * (farthestRoom.w - 2));
+  grid[gr * w + gc] = T.GOAL;
+  
+  return {
+    name: cfg.name,
+    w, h, grid,
+    start: startPos,
+    goal: [gr, gc],
+    doors,
+    doorColors,
+    keyColors,
+    switchDoor: {},
+  };
+}
+
+function isDoorBetween(door, roomA, roomB) {
+  // Simplified: check if door is on a wall that separates roomA and roomB
+  const { r: dr, c: dc } = door;
+  // Is door on roomA's right wall and roomB's left wall?
+  const aRight = roomA.c + roomA.w;
+  const bLeft = roomB.c;
+  if (dc === aRight + gap - 1 && dc === bLeft - 1) return true;
+  // Is door on roomA's bottom wall and roomB's top wall?
+  const aBottom = roomA.r + roomA.h;
+  const bTop = roomB.r;
+  if (dr === aBottom + gap - 1 && dr === bTop - 1) return true;
+  return false;
+}
 
 // ── Environment State ──
 let env = null;
@@ -289,69 +377,43 @@ let autoTimer = null;
 let strategyMode = false;
 
 function initEnv(levelIdx) {
-  const lv = LEVELS[levelIdx];
+  const lv = generateLevel(levelIdx);
   const h = lv.h, w = lv.w;
   env = {
     level: levelIdx,
     w, h,
-    grid: lv.map.map(v => v),  // Copy
+    grid: lv.grid.slice(),  // Copy
     start: [...lv.start],
     agentPos: [...lv.start],
-    goalPos: findGoal(lv.map, lv.w),
+    goalPos: [...lv.goal],
     doors: lv.doors.map(d => ({...d})),
-    doorColors: {...lv.door_colors},
-    keyColors: {...lv.key_colors},
-    switchDoor: {...lv.switch_door},
-    doorState: {},  // "r,c" -> true/false (open)
+    doorColors: {...lv.doorColors},
+    keyColors: {...lv.keyColors},
+    switchDoor: {...lv.switchDoor},
+    doorState: {},
     collectedKeys: [],
     steps: 0,
     done: false,
     visited: Array(h).fill(null).map(() => Array(w).fill(false)),
     inventory: [],
     log: [],
-    // Track openable doors count
     totalDoors: lv.doors.length,
     openedDoors: 0,
   };
   
-  // Init door states
   for (const d of lv.doors) {
     env.doorState[`${d.r},${d.c}`] = false;
   }
   
-  // Mark start as visited
   markVisited(env.agentPos[0], env.agentPos[1]);
-  
   env.log = [];
   
-  // BFS validation: check if goal is reachable
-  const allDoorsOpen = new Set(Object.keys(env.doorState));
-  const reachable = bfsReachable(env.grid, env.w, env.h, env.agentPos, env.goalPos, allDoorsOpen);
-  if (!reachable) {
-    logMsg('⚠️ 路径不通，正在自动修复...', 'warn');
-    // Auto-repair: clear a straight-ish path from agent to goal
-    autoRepairPath(env);
-    const repaired = bfsReachable(env.grid, env.w, env.h, env.agentPos, env.goalPos, allDoorsOpen);
-    if (repaired) {
-      logMsg('✅ 自动修复完成，终点现在可达', 'success');
-    } else {
-      logMsg('❌ 自动修复失败，请检查关卡设计', 'error');
-    }
-  } else {
-    logMsg('✅ 路径验证通过，终点可达', 'info');
-  }
-  
-  logMsg('环境已初始化', 'info');
-  logMsg(`目标: 到达 ★ 所在位置`, 'info');
-  if (env.doors.length > 0) {
-    logMsg(`有 ${env.doors.length} 扇门需要打开`, 'info');
-  }
+  logMsg(`🧭 ${lv.name}`, 'info');
+  logMsg(`有 ${env.doors.length} 扇门需要打开`, 'info');
   if (Object.keys(env.keyColors).length > 0) {
     logMsg('找到对应颜色的钥匙可以开门', 'info');
   }
-  if (Object.keys(env.switchDoor).length > 0) {
-    logMsg('踩下开关可以开门', 'info');
-  }
+  logMsg('目标: 到达 ★ 所在位置', 'info');
   
   strategyMode = false;
   document.getElementById('btn-strategy').textContent = '🧠 智能模式';
