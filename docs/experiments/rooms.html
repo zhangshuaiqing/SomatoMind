@@ -215,19 +215,19 @@ const LEVELS = [
     key_colors: {},
     switch_door: {},
   },
-  { // L1: Two rooms with passage (no door, just learning to navigate)
+  { // L1: Two rooms with open passage
     name: 'Two Rooms',
     w:9, h:7,
     map: [
       1,1,1,1,1,1,1,1,1,
-      1,0,0,0,0,0,1,0,1,
-      1,0,0,0,0,0,1,0,1,
-      1,0,1,1,1,1,1,0,1,
-      1,0,0,0,0,0,1,0,1,
-      1,0,0,0,0,0,1,6,1,
+      1,0,0,0,0,0,0,0,1,
+      1,0,0,0,0,0,0,0,1,
+      1,0,0,0,0,0,0,0,1,
+      1,0,0,0,0,0,0,0,1,
+      1,0,0,0,0,0,0,6,1,
       1,1,1,1,1,1,1,1,1,
     ],
-    start: [4,1],
+    start: [1,1],
     doors: [],
     door_colors: {},
     key_colors: {},
@@ -297,7 +297,7 @@ function initEnv(levelIdx) {
     grid: lv.map.map(v => v),  // Copy
     start: [...lv.start],
     agentPos: [...lv.start],
-    goalPos: findGoal(lv.map),
+    goalPos: findGoal(lv.map, lv.w),
     doors: lv.doors.map(d => ({...d})),
     doorColors: {...lv.door_colors},
     keyColors: {...lv.key_colors},
@@ -323,6 +323,16 @@ function initEnv(levelIdx) {
   markVisited(env.agentPos[0], env.agentPos[1]);
   
   env.log = [];
+  
+  // BFS validation: check if goal is reachable (ignoring keys/switches, only consider openable doors)
+  const allDoorsOpen = new Set(Object.keys(env.doorState));
+  const reachable = bfsReachable(env.grid, env.w, env.h, env.agentPos, env.goalPos, allDoorsOpen);
+  if (!reachable) {
+    logMsg('⚠️ 警告：此关卡地图可能存在不可达的问题', 'error');
+  } else {
+    logMsg('✅ 路径验证通过，终点可达', 'info');
+  }
+  
   logMsg('环境已初始化', 'info');
   logMsg(`目标: 到达 ★ 所在位置`, 'info');
   if (env.doors.length > 0) {
@@ -343,17 +353,42 @@ function initEnv(levelIdx) {
   updateInventory();
 }
 
-function findGoal(map) {
+function findGoal(map, w) {
   for (let i = 0; i < map.length; i++) {
     if (map[i] === T.GOAL) {
-      const w = LEVELS[0].w; // placeholder, fixed below
+      const r = Math.floor(i / w);
+      const c = i % w;
+      return [r, c];
     }
   }
   return [1, 1];
 }
 
-function initAgents() {
-  // Fix: find goal properly per level
+// ── BFS pathfinding ──
+function bfsReachable(grid, w, h, start, goal, doorsOpen) {
+  // doorsOpen: set of "r,c" strings representing open doors
+  const visited = new Set();
+  const queue = [start];
+  visited.add(`${start[0]},${start[1]}`);
+  const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+  
+  while (queue.length > 0) {
+    const [r, c] = queue.shift();
+    if (r === goal[0] && c === goal[1]) return true;
+    for (const [dr, dc] of dirs) {
+      const nr = r + dr, nc = c + dc;
+      const key = `${nr},${nc}`;
+      if (nr < 0 || nr >= h || nc < 0 || nc >= w) continue;
+      if (visited.has(key)) continue;
+      const idx = nr * w + nc;
+      const tile = grid[idx];
+      if (tile === T.WALL) continue;
+      if (tile === T.DOOR_CLOSED && !doorsOpen.has(key)) continue;
+      visited.add(key);
+      queue.push([nr, nc]);
+    }
+  }
+  return false;
 }
 
 function markVisited(r, c) {
