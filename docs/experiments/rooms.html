@@ -136,7 +136,7 @@ body { max-width: 1100px; padding-top: 0; }
       <label>关卡:</label>
       <select id="level-select">
         <option value="0">L0: 单房间 (热身)</option>
-        <option value="1" selected>L1: 双房间开门</option>
+        <option value="1" selected>L1: 双房间通道</option>
         <option value="2">L2: 三房间 + 钥匙</option>
         <option value="3">L3: 四房间迷宫</option>
       </select>
@@ -215,21 +215,21 @@ const LEVELS = [
     key_colors: {},
     switch_door: {},
   },
-  { // L1: Two rooms with door
-    name: 'Two Rooms + Door',
-    w:9, h:9,
+  { // L1: Two rooms with passage (no door, just learning to navigate)
+    name: 'Two Rooms',
+    w:9, h:7,
     map: [
       1,1,1,1,1,1,1,1,1,
-      1,0,0,0,1,0,0,0,1,
-      1,0,0,0,1,0,0,0,1,
-      1,0,0,0,2,0,0,0,1,
-      1,0,0,0,1,0,0,0,1,
-      1,0,0,0,1,0,0,0,1,
+      1,0,0,0,0,0,1,0,1,
+      1,0,0,0,0,0,1,0,1,
+      1,0,1,1,1,1,1,0,1,
+      1,0,0,0,0,0,1,0,1,
+      1,0,0,0,0,0,1,6,1,
       1,1,1,1,1,1,1,1,1,
     ],
-    start: [1,1],
-    doors: [{r:3,c:4, color:'red'}],
-    door_colors: {'3,4':'red'},
+    start: [4,1],
+    doors: [],
+    door_colors: {},
     key_colors: {},
     switch_door: {},
   },
