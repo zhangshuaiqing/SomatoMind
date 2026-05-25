@@ -1,0 +1,7 @@
+# MorphMind
+
+# Avoid committing personal notes
+*.pyc
+__pycache__/
+.env
+.venv/
