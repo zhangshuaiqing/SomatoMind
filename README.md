@@ -85,14 +85,25 @@ SomatoMind/
 │   ├── e2_architecture/  # 网络架构对比实验
 │   ├── e3_self_evolve/   # 部署后进化实验
 │   └── ...
-├── brain/                # Brain 架构原型
-│   ├── core/             # 核心架构定义
-│   ├── working_memory/   # 工作记忆模块
-│   ├── reflection/       # 反思/元认知模块
-│   ├── perception/       # 感知适配器
-│   └── motor/            # 运动控制器
+├── brain/                # 🧠 Brain 认知架构原型
+│   ├── core/             # 核心引擎（快/慢回路调度）
+│   ├── memory/           # 记忆系统
+│   │   ├── sensory_buffer/   # 感觉缓冲（毫秒级）
+│   │   ├── working_memory/   # 工作记忆（秒级）
+│   │   ├── episodic_memory/  # 情景记忆（分钟级）
+│   │   └── procedural_memory/# 程序记忆（长期技能）
+│   ├── perception/       # 感知 + 注意力 + 世界模型
+│   ├── cognition/        # 高级认知
+│   │   ├── reasoning/    # 推理（符号 + 概率）
+│   │   ├── planning/     # 规划（搜索 + 分解）
+│   │   ├── reflection/   # 反思 / 元认知
+│   │   ├── attention/    # 注意力机制
+│   │   ├── spatial/      # 空间推理 + 心理模拟
+│   │   └── creativity/   # 创造力 / 探索
+│   ├── action/           # 动作输出 + 运动控制
+│   └── plasticity/       # 可塑性系统（持续学习）
 ├── papers/               # 相关论文笔记与参考文献
-├── docs/                 # 实验文档、设计思路
+├── docs/                 # 架构文档、实验设计思路
 ├── results/              # 实验结果与可视化
 ├── tools/                # 通用工具代码
 ├── notebooks/            # Jupyter 分析 notebooks

@@ -1,22 +1,30 @@
 """
-E1: Reflection Loop — Agent with Working Memory and Verbal Self-Reflection
+E1: Reflection Loop — Agent with Structured Working Memory and Verbal Self-Reflection
 
-Hypothesis: 
-  A navigation agent that maintains a structured working memory and can
-  reflect on past failures will outperform a pure ReAct agent under 
+Hypothesis:
+  A navigation agent that maintains structured working memory and can
+  reflect on past failures will outperform a pure ReAct agent under
   partial observability and dynamic obstacles.
 
-Architecture:
-  Observation + Working Memory → LLM → Action + Updated Working Memory
-                                   ↓
-                            Critic LLM generates verbal feedback
-                                   ↓
-                         Feedback stored in Episodic Memory
-                                   ↓
-                         Next step: Episodic Memory injected into prompt
+Mapping to SomatoMind Brain:
+  - Perception: GridWorld observation adapter
+  - Memory: working_memory + episodic_memory
+  - Cognition: reflection module (Reflexion-style) + planning
+  - Action: GridWorld action mapper
+  - Fast loop: policy network
+  - Slow loop: episodic recall → reflection → plan update
 
-Reference:
-  - Shinn et al. (2023). Reflexion: Language Agents with Verbal Reinforcement Learning
+Metrics:
+  - Success rate (goal reached)
+  - Steps to goal
+  - Reflection effectiveness (did reflection change behavior?)
+
+Baseline:
+  - Pure ReAct agent (no working memory, no reflection)
+
+Core cognitive capabilities tested:
+  - 记忆力 (working memory maintains task context)
+  - 推理力 (reflection evaluates past decisions)
 """
 
-print("E1: Reflection Loop — placeholder. Implement me!")
+print("E1: Reflection Loop — placeholder. Implement using SomatoMind Brain!")

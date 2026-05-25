@@ -3,23 +3,21 @@ E3: Self-Evolving Agents — Continual Learning After Deployment
 
 Hypothesis:
   An agent that can adjust its own weights or create new connections
-  during deployment will outperform a frozen network when the environment 
+  during deployment will outperform a frozen network when the environment
   changes over time.
 
-Techniques to explore:
+Core cognitive capabilities tested:
+  - 创造力 (structural plasticity as a form of creative adaptation)
+  - 推理力 (meta-cognitive evaluation triggers plasticity)
+
+Techniques:
   - Elastic Weight Consolidation (EWC) — protect important weights
-  - Differentiable Plasticity (Miconi et al.) — learn hebbian-like rules
-  - Online Structural Plasticity — dynamically add/remove neurons
-  - Modular architecture — different modules for different task regimes
+  - Differentiable Plasticity — learned Hebbian update rules
+  - Structural Plasticity — dynamically add/remove connections
 
 Experiment protocol:
-  Phase 1: Train on Maze Type A
-  Phase 2: Deploy on Maze Type B (with/without protection mechanisms)
-  Phase 3: Test retention on Maze Type A (measure catastrophic forgetting)
-
-Reference:
-  - Kirkpatrick et al. (2017). Overcoming catastrophic forgetting in neural networks
-  - Miconi et al. (2019). Differentiable plasticity
+  Phase 1: Train on Maze Type A → Phase 2: Deploy on Maze Type B
+  Phase 3: Test retention on Maze Type A
 """
 
-print("E3: Self-Evolving Agents — placeholder. Implement me!")
+print("E3: Self-Evolving Agents — placeholder.")

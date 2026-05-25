@@ -1,16 +1,8 @@
 """
-brain — SomatoMind Core Cognition Architecture
+SomatoMind Brain — Core Cognition Architecture
 
-This package is the evolving prototype of the SomatoMind "Brain":
-an agent architecture inspired by biological neural systems that can:
-
-  - Maintain structured working memory across timesteps
-  - Reflect on past decisions and adjust strategies (metacognition)
-  - Continue learning after deployment (plasticity mechanisms)
-  - Adapt to multiple perception modalities and motor systems
-
-The Brain is the ultimate output of SomatoMind experiments.
-Each experiment in experiments/ feeds findings back into brain/.
+A multi-timescale, modular cognitive architecture inspired by biological neural systems.
+See docs/architecture.md for full design documentation.
 """
 
-from .core.brain import Brain
+from .brain import Brain, BrainConfig
