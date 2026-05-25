@@ -64,6 +64,8 @@ SomatoMind 项目源于这样的信念：
 | **E5 — 仿真到实物的 Bridge** | Brain 控制 ROS2 + Gazebo 中的机器人 | 🔲 未开始 |
 | **E6 — 群体涌现** | 多 Brain 通过共享隐状态环境痕迹涌现群体行为 | 🔲 未开始 |
 
+> 🌐 项目主页：https://zhangshuaiqing.github.io/SomatoMind
+
 ## 🧰 实验平台 / Platform
 
 - **Phase 1 实验床**：基于 [navigation-agent](https://github.com/zhangshuaiqing/navigation-agent) 的 GridWorld 环境

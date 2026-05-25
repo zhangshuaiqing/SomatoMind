@@ -1,7 +1,7 @@
 [project]
 name = "somatomind"
 version = "0.1.0"
-description = "Add your description here"
+description = "Somato + Mind — Shape shapes the mind. Exploring the structure of intelligence through computational experiments, building toward a deployable Brain for embodied agents."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -10,3 +10,9 @@ dependencies = [
     "pillow>=12.2.0",
     "torch>=2.12.0",
 ]
+
+[project.urls]
+Homepage = "https://zhangshuaiqing.github.io/SomatoMind"
+Repository = "https://github.com/zhangshuaiqing/SomatoMind"
+Discussions = "https://github.com/zhangshuaiqing/SomatoMind/discussions"
+Issues = "https://github.com/zhangshuaiqing/SomatoMind/issues"
