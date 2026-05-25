@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SomatoMind — 多房间探索环境</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+:root {
+  --cell: 54px;
+  --tile-gap: 2px;
+}
+
+body { max-width: 1100px; }
+
+.arena-wrap {
+  display: flex; gap: 1.5rem; align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+#main-canvas {
+  border: 1px solid var(--border); border-radius: 8px;
+  background: #161b22;
+}
+
+/* Sidebar */
+.sidebar { flex: 1; min-width: 280px; }
+
+.sidebar h3 { color: var(--accent); font-size: 1rem; margin-bottom: 0.5rem; }
+
+.stats-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+.stat-item {
+  background: #161b22; border: 1px solid var(--border); border-radius: 6px;
+  padding: 0.4rem 0.6rem; font-size: 0.8rem;
+}
+.stat-item .stat-label { color: var(--fg2); display: block; font-size: 0.7rem; }
+.stat-item .stat-value { color: var(--fg); font-weight: 600; font-size: 0.95rem; }
+
+.inventory-box {
+  background: #161b22; border: 1px solid var(--border); border-radius: 8px;
+  padding: 0.6rem; margin-bottom: 1rem; min-height: 40px;
+}
+.inventory-box .inv-empty { color: var(--fg2); font-size: 0.8rem; font-style: italic; }
+.inv-item {
+  display: inline-block; background: var(--blue); border: 1px solid var(--blue-border);
+  border-radius: 4px; padding: 0.2rem 0.5rem; margin: 0.15rem; font-size: 0.8rem;
+}
+
+.controls { margin-bottom: 1rem; }
+.controls button {
+  background: #1f3a5f; border: 1px solid var(--blue-border); border-radius: 6px;
+  color: var(--blue-border); padding: 0.4rem 0.9rem; cursor: pointer; font-size: 0.8rem;
+  margin-right: 0.3rem; margin-bottom: 0.3rem;
+}
+.controls button:hover { background: #1f4a7f; }
+.controls button.primary { background: #238636; border-color: #3fb950; color: #fff; }
+.controls button.primary:hover { background: #2ea043; }
+.controls button.danger { background: #3d1a1a; border-color: #f85149; color: #f85149; }
+.controls button.danger:hover { background: #5c1a1a; }
+.controls button:disabled { opacity: 0.4; cursor: default; }
+
+.level-select { margin-bottom: 0.8rem; }
+.level-select label { color: var(--fg2); font-size: 0.8rem; margin-right: 0.5rem; }
+.level-select select {
+  background: #161b22; border: 1px solid var(--border); border-radius: 6px;
+  color: var(--fg); padding: 0.3rem; font-size: 0.8rem;
+}
+
+.msg-log {
+  background: #161b22; border: 1px solid var(--border); border-radius: 8px;
+  padding: 0.5rem; max-height: 120px; overflow-y: auto; font-size: 0.78rem;
+  line-height: 1.5; margin-top: 0.5rem;
+}
+.msg-log div { color: var(--fg2); }
+.msg-log .msg-info { color: var(--blue-border); }
+.msg-log .msg-success { color: #3fb950; }
+.msg-log .msg-warn { color: #d29922; }
+.msg-log .msg-error { color: #f85149; }
+
+.legend {
+  display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.8rem;
+}
+.legend-item { display: flex; align-items: center; gap: 0.3rem; font-size: 0.75rem; color: var(--fg2); }
+.legend-swatch {
+  width: 16px; height: 16px; border-radius: 3px; border: 1px solid var(--border);
+  display: inline-block;
+}
+
+/* Fog toggle */
+.fog-toggle { margin-top: 0.5rem; }
+.fog-toggle label { color: var(--fg2); font-size: 0.8rem; cursor: pointer; }
+.fog-toggle input { margin-right: 0.3rem; }
+
+/* Exploration overlay */
+#explore-overlay {
+  display: none; text-align: center; padding: 1rem;
+}
+#explore-overlay .big { font-size: 1.5rem; color: var(--accent); margin-bottom: 0.5rem; }
+#explore-overlay .sub { color: var(--fg2); font-size: 0.85rem; }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <a href="index.html" class="logo">🧬 SomatoMind</a>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="https://github.com/zhangshuaiqing/SomatoMind">GitHub</a>
+  </nav>
+</header>
+
+<h1>🏰 多房间探索环境</h1>
+<p>Agent 需要探索多房间结构、收集钥匙开门、规划路径到达目标。</p>
+<hr>
+
+<div class="arena-wrap">
+  <div>
+    <canvas id="main-canvas"></canvas>
+    <div class="legend">
+      <span class="legend-item"><span class="legend-swatch" style="background:#161b22;border-color:#30363d;"></span> 可走</span>
+      <span class="legend-item"><span class="legend-swatch" style="background:#30363d;"></span> 墙壁</span>
+      <span class="legend-item"><span class="legend-swatch" style="background:#f85149;"></span> 门(关)</span>
+      <span class="legend-item"><span class="legend-swatch" style="background:#3fb950;"></span> 门(开)</span>
+      <span class="legend-item"><span class="legend-swatch" style="background:#58a6ff;border-radius:50%;"></span> Agent</span>
+      <span class="legend-item"><span class="legend-swatch" style="background:#d29922;border-radius:50%;"></span> 目标</span>
+      <span class="legend-item"><span class="legend-swatch" style="background:#d2a8ff;"></span> 钥匙</span>
+      <span class="legend-item"><span class="legend-swatch" style="background:#f0883e;"></span> 开关</span>
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <div class="level-select">
+      <label>关卡:</label>
+      <select id="level-select">
+        <option value="0">L0: 单房间 (热身)</option>
+        <option value="1" selected>L1: 双房间开门</option>
+        <option value="2">L2: 三房间 + 钥匙</option>
+        <option value="3">L3: 四房间迷宫</option>
+      </select>
+    </div>
+
+    <div class="controls">
+      <button class="primary" id="btn-reset">🔄 重置</button>
+      <button id="btn-step">▶ 一步</button>
+      <button id="btn-auto">⏩ 自动</button>
+      <button id="btn-strategy">🧠 智能模式</button>
+    </div>
+
+    <h3>📊 状态</h3>
+    <div class="stats-grid" id="stats-grid">
+      <div class="stat-item"><span class="stat-label">步数</span><span class="stat-value" id="stat-steps">0</span></div>
+      <div class="stat-item"><span class="stat-label">探索率</span><span class="stat-value" id="stat-explore">0%</span></div>
+      <div class="stat-item"><span class="stat-label">已开门</span><span class="stat-value" id="stat-doors">0/0</span></div>
+      <div class="stat-item"><span class="stat-label">钥匙</span><span class="stat-value" id="stat-keys">0</span></div>
+    </div>
+
+    <h3>🎒 背包</h3>
+    <div class="inventory-box" id="inventory-box">
+      <span class="inv-empty">空</span>
+    </div>
+
+    <h3>💬 消息</h3>
+    <div class="fog-toggle">
+      <label><input type="checkbox" id="fog-toggle" checked> 迷雾模式（仅显示已探索区域）</label>
+    </div>
+    <div class="msg-log" id="msg-log"></div>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <a href="index.html">← 返回主页</a>
+</footer>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  Multi-Room Environment — Pure JS
+// ═══════════════════════════════════════════════════════════════
+
+const canvas = document.getElementById('main-canvas');
+const ctx = canvas.getContext('2d');
+const CELL = 48;
+const DOOR = '🚪';
+
+// ── Level Definitions ──
+// Tiles: 0=empty, 1=wall, 2=door(closed), 3=door(open), 4=key, 5=switch, 6=goal
+// Colors index
+const T = { EMPTY:0, WALL:1, DOOR_CLOSED:2, DOOR_OPEN:3, KEY:4, SWITCH:5, GOAL:6 };
+const TILE_COLORS = [
+  '#161b22','#30363d','#f85149','#3fb950','#d2a8ff','#f0883e','#d29922'
+];
+const TILE_GLYPH = ['·','■','▣','▣','⚷','⚡','★'];
+const TILE_LABEL = ['floor','wall','door','door_open','key','switch','goal'];
+
+const LEVELS = [
+  { // L0: warmup
+    name: 'Single Room',
+    w:9, h:9,
+    map: [
+      1,1,1,1,1,1,1,1,1,
+      1,0,0,0,0,0,0,0,1,
+      1,0,0,0,0,0,0,0,1,
+      1,0,0,0,0,0,0,0,1,
+      1,0,0,0,6,0,0,0,1,
+      1,0,0,0,0,0,0,0,1,
+      1,0,0,0,0,0,0,0,1,
+      1,0,0,0,0,0,0,0,1,
+      1,1,1,1,1,1,1,1,1,
+    ],
+    start: [1,1],
+    doors: [],
+    door_colors: {},
+    key_colors: {},
+    switch_door: {},
+  },
+  { // L1: Two rooms with door
+    name: 'Two Rooms + Door',
+    w:9, h:9,
+    map: [
+      1,1,1,1,1,1,1,1,1,
+      1,0,0,0,1,0,0,0,1,
+      1,0,0,0,1,0,0,0,1,
+      1,0,0,0,2,0,0,0,1,
+      1,0,0,0,1,0,0,0,1,
+      1,0,0,0,1,0,0,0,1,
+      1,1,1,1,1,1,1,1,1,
+    ],
+    start: [1,1],
+    doors: [{r:3,c:4, color:'red'}],
+    door_colors: {'3,4':'red'},
+    key_colors: {},
+    switch_door: {},
+  },
+  { // L2: Three rooms + key
+    name: 'Three Rooms + Key',
+    w:11, h:11,
+    map: [
+      1,1,1,1,1,1,1,1,1,1,1,
+      1,0,0,0,0,1,0,0,0,0,1,
+      1,0,0,0,0,1,0,0,0,0,1,
+      1,0,0,4,0,2,0,0,0,0,1,
+      1,0,0,0,0,1,0,0,0,0,1,
+      1,1,1,1,1,1,1,1,1,1,1,
+      1,0,0,0,0,1,0,0,0,0,1,
+      1,0,0,0,0,1,0,0,6,0,1,
+      1,0,0,0,0,1,0,0,0,0,1,
+      1,1,1,1,1,1,1,1,1,1,1,
+    ],
+    start: [1,1],
+    doors: [{r:3,c:5, color:'red'}, {r:7,c:5, color:'red'}],
+    door_colors: {'3,5':'red', '7,5':'red'},
+    key_colors: {'3,3':'red'},
+    switch_door: {},
+  },
+  { // L3: Four room maze + switches
+    name: 'Four Room Maze',
+    w:13, h:13,
+    map: [
+      1,1,1,1,1,1,1,1,1,1,1,1,1,
+      1,0,0,0,1,0,0,0,0,1,6,0,1,
+      1,0,0,0,1,0,0,0,0,2,0,0,1,
+      1,0,4,0,1,0,0,0,0,1,0,0,1,
+      1,1,1,2,1,1,1,1,1,1,1,1,1,
+      1,0,0,0,0,0,0,0,0,0,0,0,1,
+      1,0,0,0,0,0,0,0,0,0,0,0,1,
+      1,0,5,0,0,0,0,0,0,0,0,0,1,
+      1,1,1,2,1,1,1,1,1,1,1,1,1,
+      1,0,0,0,1,0,0,0,0,1,0,0,1,
+      1,0,0,0,1,0,0,0,0,1,0,0,1,
+      1,0,0,0,1,0,0,0,0,1,0,0,1,
+      1,1,1,1,1,1,1,1,1,1,1,1,1,
+    ],
+    start: [1,1],
+    doors: [{r:3,c:3, color:'red'}, {r:8,c:3, color:'blue'}, {r:2,c:9, color:'red'}],
+    door_colors: {'3,3':'red', '8,3':'blue', '2,9':'red'},
+    key_colors: {'2,2':'red'},
+    switch_door: {'7,2':'blue'},  // switch at (7,2) opens blue doors
+    switch_door_color: {'blue':'red'},  // label for switch display
+  },
+];
+
+// ── Environment State ──
+let env = null;
+let agent = null;
+let fogMode = true;
+let autoTimer = null;
+let strategyMode = false;
+
+function initEnv(levelIdx) {
+  const lv = LEVELS[levelIdx];
+  const h = lv.h, w = lv.w;
+  env = {
+    level: levelIdx,
+    w, h,
+    grid: lv.map.map(v => v),  // Copy
+    start: [...lv.start],
+    agentPos: [...lv.start],
+    goalPos: findGoal(lv.map),
+    doors: lv.doors.map(d => ({...d})),
+    doorColors: {...lv.door_colors},
+    keyColors: {...lv.key_colors},
+    switchDoor: {...lv.switch_door},
+    doorState: {},  // "r,c" -> true/false (open)
+    collectedKeys: [],
+    steps: 0,
+    done: false,
+    visited: Array(h).fill(null).map(() => Array(w).fill(false)),
+    inventory: [],
+    log: [],
+    // Track openable doors count
+    totalDoors: lv.doors.length,
+    openedDoors: 0,
+  };
+  
+  // Init door states
+  for (const d of lv.doors) {
+    env.doorState[`${d.r},${d.c}`] = false;
+  }
+  
+  // Mark start as visited
+  markVisited(env.agentPos[0], env.agentPos[1]);
+  
+  env.log = [];
+  logMsg('环境已初始化', 'info');
+  logMsg(`目标: 到达 ★ 所在位置`, 'info');
+  if (env.doors.length > 0) {
+    logMsg(`有 ${env.doors.length} 扇门需要打开`, 'info');
+  }
+  if (Object.keys(env.keyColors).length > 0) {
+    logMsg('找到对应颜色的钥匙可以开门', 'info');
+  }
+  if (Object.keys(env.switchDoor).length > 0) {
+    logMsg('踩下开关可以开门', 'info');
+  }
+  
+  strategyMode = false;
+  document.getElementById('btn-strategy').textContent = '🧠 智能模式';
+  
+  render();
+  updateStats();
+  updateInventory();
+}
+
+function findGoal(map) {
+  for (let i = 0; i < map.length; i++) {
+    if (map[i] === T.GOAL) {
+      const w = LEVELS[0].w; // placeholder, fixed below
+    }
+  }
+  return [1, 1];
+}
+
+function initAgents() {
+  // Fix: find goal properly per level
+}
+
+function markVisited(r, c) {
+  if (env && r >= 0 && r < env.h && c >= 0 && c < env.w) {
+    env.visited[r][c] = true;
+  }
+}
+
+function getTile(r, c) {
+  if (!env) return T.WALL;
+  if (r < 0 || r >= env.h || c < 0 || c >= env.w) return T.WALL;
+  const idx = r * env.w + c;
+  // Override: door state
+  if (env.doorState[`${r},${c}`] === true) return T.DOOR_OPEN;
+  return env.grid[idx];
+}
+
+function setTile(r, c, val) {
+  const idx = r * env.w + c;
+  env.grid[idx] = val;
+}
+
+function logMsg(text, cls='') {
+  env.log.push({text, cls});
+  const el = document.getElementById('msg-log');
+  const d = document.createElement('div');
+  if (cls) d.className = 'msg-' + cls;
+  d.textContent = text;
+  el.appendChild(d);
+  el.scrollTop = el.scrollHeight;
+  // Keep max 50
+  while (el.children.length > 50) el.removeChild(el.firstChild);
+}
+
+// ── Actions ──
+
+function tryMove(dr, dc) {
+  if (!env || env.done) return;
+  
+  const r = env.agentPos[0] + dr;
+  const c = env.agentPos[1] + dc;
+  const tile = getTile(r, c);
+  
+  if (tile === T.WALL) {
+    logMsg('碰壁了！', 'warn');
+    env.steps++;
+    render(); updateStats();
+    return;
+  }
+  if (tile === T.DOOR_CLOSED) {
+    const color = env.doorColors[`${r},${c}`] || '';
+    logMsg(`门挡住了去路 (${color})`, 'warn');
+    // Try auto-use key
+    if (color && env.inventory.includes(color)) {
+      env.doorState[`${r},${c}`] = true;
+      env.inventory = env.inventory.filter(k => k !== color);
+      env.openedDoors++;
+      logMsg(`用 ${color}钥匙打开了门！`, 'success');
+      render(); updateStats();
+      // Then try move again
+      tryMove(dr, dc);
+      return;
+    }
+    env.steps++;
+    render(); updateStats();
+    return;
+  }
+  
+  // Move
+  env.agentPos = [r, c];
+  markVisited(r, c);
+  env.steps++;
+  
+  const tileType = getTile(r, c);
+  
+  if (tileType === T.GOAL) {
+    env.done = true;
+    logMsg('🎉 到达目标！', 'success');
+    render(); updateStats();
+    return;
+  }
+  
+  if (tileType === T.KEY) {
+    const color = env.keyColors[`${r},${c}`] || '?';
+    env.inventory.push(color);
+    setTile(r, c, T.EMPTY);
+    logMsg(`捡到了 ${color}钥匙！`, 'success');
+    render(); updateStats();
+  }
+  
+  if (tileType === T.SWITCH) {
+    // Toggle doors linked to this switch
+    const doorKey = env.switchDoor[`${r},${c}`];
+    if (doorKey) {
+      for (const [k, v] of Object.entries(env.doorState)) {
+        if (env.doorColors[k] === doorKey) {
+          env.doorState[k] = !v;
+          if (env.doorState[k]) {
+            env.openedDoors++;
+            logMsg(`踩下开关！${doorKey}门打开了`, 'success');
+          } else {
+            env.openedDoors--;
+            logMsg(`${doorKey}门关闭了`, 'warn');
+          }
+        }
+      }
+    }
+    render(); updateStats();
+  }
+  
+  // Auto strategy when enabled
+  if (strategyMode && !env.done) {
+    setTimeout(() => strategyStep(), 50);
+  }
+  
+  render();
+  updateStats();
+}
+
+function strategyStep() {
+  if (!env || env.done) return;
+  
+  // Simple intelligent strategy:
+  // 1. If goal visible → go toward it
+  // 2. If door in front and have key → move (auto-unlock)
+  // 3. Explore unvisited cells nearby
+  // 4. Pick up keys if nearby
+  // 5. Random walk with unvisited preference
+  
+  const [r, c] = env.agentPos;
+  const directions = [[-1,0,'↑'],[1,0,'↓'],[0,-1,'←'],[0,1,'→']];
+  
+  // Score each direction
+  let bestAction = null;
+  let bestScore = -999;
+  
+  for (const [dr, dc, label] of directions) {
+    const nr = r + dr, nc = c + dc;
+    const tile = getTile(nr, nc);
+    let score = 0;
+    
+    // Can't walk through walls
+    if (tile === T.WALL) { score = -100; }
+    else if (tile === T.DOOR_CLOSED) {
+      const color = env.doorColors[`${nr},${nc}`] || '';
+      if (color && env.inventory.includes(color)) { score = 50; }  // can open!
+      else if (Object.keys(env.switchDoor).length > 0) {
+        // Maybe there's a switch somewhere
+        score = -10;
+      }
+      else { score = -50; }  // stuck
+    }
+    else {
+      score = 10;  // walkable
+      // Bonus for unvisited
+      if (!env.visited[nr][nc]) score += 20;
+      // Bonus for key
+      if (tile === T.KEY) score += 30;
+      // Bonus for switch
+      if (tile === T.SWITCH) score += 25;
+      // Bonus for moving toward goal (approximate)
+      const gr = env.goalPos[0], gc = env.goalPos[1];
+      const curDist = Math.abs(r - gr) + Math.abs(c - gc);
+      const newDist = Math.abs(nr - gr) + Math.abs(nc - gc);
+      if (newDist < curDist) score += 5;
+    }
+    
+    // Small random factor
+    score += Math.random() * 3;
+    
+    if (score > bestScore) {
+      bestScore = score;
+      bestAction = [dr, dc, label];
+    }
+  }
+  
+  if (bestAction) {
+    tryMove(bestAction[0], bestAction[1]);
+  }
+}
+
+// ── Rendering ──
+
+function render() {
+  if (!env) return;
+  const {w, h} = env;
+  const cw = w * CELL, ch = h * CELL;
+  canvas.width = cw; canvas.height = ch;
+  
+  ctx.fillStyle = '#0d1117';
+  ctx.fillRect(0, 0, cw, ch);
+  
+  for (let r = 0; r < h; r++) {
+    for (let c = 0; c < w; c++) {
+      const x = c * CELL, y = r * CELL;
+      
+      // Fog
+      if (fogMode && !env.visited[r][c]) {
+        ctx.fillStyle = '#0a0e14';
+        ctx.fillRect(x, y, CELL, CELL);
+        ctx.strokeStyle = '#151b22';
+        ctx.strokeRect(x, y, CELL, CELL);
+        continue;
+      }
+      
+      const tile = getTile(r, c);
+      const color = TILE_COLORS[tile] || '#161b22';
+      
+      // Background
+      ctx.fillStyle = (tile === T.EMPTY || tile === T.GOAL) ? '#161b22' : color;
+      ctx.fillRect(x, y, CELL, CELL);
+      
+      // Door special
+      if (tile === T.DOOR_CLOSED || tile === T.DOOR_OPEN) {
+        const doorColor = env.doorColors[`${r},${c}`] || '';
+        ctx.fillStyle = tile === T.DOOR_CLOSED ? '#f85149' : '#3fb950';
+        ctx.fillRect(x, y, CELL, CELL);
+        if (doorColor) {
+          ctx.fillStyle = doorColor === 'red' ? '#ff6b6b' : 
+                          doorColor === 'blue' ? '#58a6ff' : '#d29922';
+          ctx.fillRect(x + 8, y + 8, CELL - 16, CELL - 16);
+        }
+        // Door symbol
+        ctx.fillStyle = '#fff';
+        ctx.font = `${CELL * 0.4}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('🚪', x + CELL/2, y + CELL/2);
+      }
+      
+      // Key
+      if (tile === T.KEY) {
+        const keyColor = env.keyColors[`${r},${c}`] || '';
+        ctx.fillStyle = '#2d1b69';
+        ctx.fillRect(x, y, CELL, CELL);
+        ctx.fillStyle = keyColor === 'red' ? '#ff6b6b' : keyColor === 'blue' ? '#58a6ff' : '#d29922';
+        ctx.beginPath();
+        ctx.arc(x + CELL/2, y + CELL/2, CELL * 0.18, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.font = `${CELL * 0.35}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('🔑', x + CELL/2, y + CELL/2);
+      }
+      
+      // Switch
+      if (tile === T.SWITCH) {
+        ctx.fillStyle = '#3d2e00';
+        ctx.fillRect(x, y, CELL, CELL);
+        ctx.fillStyle = '#f0883e';
+        ctx.fillRect(x + 6, y + 14, CELL - 12, CELL - 28);
+        ctx.fillStyle = '#fff';
+        ctx.font = `${CELL * 0.3}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('⚡', x + CELL/2, y + CELL/2);
+      }
+      
+      // Goal
+      if (tile === T.GOAL || (r === env.goalPos[0] && c === env.goalPos[1])) {
+        ctx.fillStyle = '#3d2e00';
+        ctx.fillRect(x, y, CELL, CELL);
+        ctx.fillStyle = '#d29922';
+        ctx.shadowColor = '#d29922';
+        ctx.shadowBlur = 12;
+        ctx.beginPath();
+        ctx.arc(x + CELL/2, y + CELL/2, CELL * 0.22, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#ffd8a8';
+        ctx.font = `${CELL * 0.4}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('★', x + CELL/2, y + CELL/2);
+      }
+      
+      // Grid lines
+      ctx.strokeStyle = '#21262d';
+      ctx.lineWidth = 0.5;
+      ctx.strokeRect(x, y, CELL, CELL);
+    }
+  }
+  
+  // Agent
+  const ar = env.agentPos[0], ac = env.agentPos[1];
+  if (!fogMode || env.visited[ar][ac]) {
+    ctx.shadowColor = '#79c0ff';
+    ctx.shadowBlur = 14;
+    ctx.fillStyle = '#58a6ff';
+    ctx.beginPath();
+    ctx.arc(ac * CELL + CELL/2, ar * CELL + CELL/2, CELL * 0.28, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#fff';
+    ctx.font = `${CELL * 0.35}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('●', ac * CELL + CELL/2, ar * CELL + CELL/2);
+  }
+  
+  updateStats();
+  updateInventory();
+}
+
+function updateStats() {
+  if (!env) return;
+  document.getElementById('stat-steps').textContent = env.steps;
+  const visitedCount = env.visited.flat().filter(v => v).length;
+  const total = env.w * env.h;
+  document.getElementById('stat-explore').textContent = `${Math.round(visitedCount / total * 100)}%`;
+  document.getElementById('stat-doors').textContent = `${env.openedDoors}/${env.totalDoors}`;
+  document.getElementById('stat-keys').textContent = env.inventory.length;
+}
+
+function updateInventory() {
+  const box = document.getElementById('inventory-box');
+  if (!env || env.inventory.length === 0) {
+    box.innerHTML = '<span class="inv-empty">空</span>';
+    return;
+  }
+  box.innerHTML = env.inventory.map(k => 
+    `<span class="inv-item" style="background:${k === 'red' ? '#3d1a1a;border-color:#f85149' : k === 'blue' ? '#1f3a5f;border-color:#58a6ff' : '#3d2e00;border-color:#d29922'}">${k}🔑</span>`
+  ).join('');
+}
+
+// ── Key bindings ──
+document.addEventListener('keydown', e => {
+  if (!env) return;
+  switch(e.key) {
+    case 'ArrowUp': e.preventDefault(); tryMove(-1,0); break;
+    case 'ArrowDown': e.preventDefault(); tryMove(1,0); break;
+    case 'ArrowLeft': e.preventDefault(); tryMove(0,-1); break;
+    case 'ArrowRight': e.preventDefault(); tryMove(0,1); break;
+    case ' ': e.preventDefault(); strategyStep(); break;
+  }
+});
+
+// ── UI Bindings ──
+document.getElementById('btn-reset').addEventListener('click', () => {
+  if (autoTimer) { clearInterval(autoTimer); autoTimer = null; document.getElementById('btn-auto').textContent = '⏩ 自动'; }
+  const idx = parseInt(document.getElementById('level-select').value);
+  document.getElementById('msg-log').innerHTML = '';
+  initEnv(idx);
+});
+
+document.getElementById('btn-step').addEventListener('click', () => strategyStep());
+
+document.getElementById('btn-auto').addEventListener('click', () => {
+  if (autoTimer) {
+    clearInterval(autoTimer); autoTimer = null;
+    document.getElementById('btn-auto').textContent = '⏩ 自动';
+    return;
+  }
+  if (env && env.done) { initEnv(env.level); }
+  document.getElementById('btn-auto').textContent = '⏹ 停止';
+  autoTimer = setInterval(() => {
+    if (env && env.done) {
+      clearInterval(autoTimer); autoTimer = null;
+      document.getElementById('btn-auto').textContent = '⏩ 自动';
+      return;
+    }
+    strategyStep();
+  }, 120);
+});
+
+document.getElementById('btn-strategy').addEventListener('click', () => {
+  strategyMode = !strategyMode;
+  document.getElementById('btn-strategy').textContent = strategyMode ? '🧠 智能模式 ✓' : '🧠 智能模式';
+  if (strategyMode && !env.done) {
+    setTimeout(() => strategyStep(), 50);
+  }
+});
+
+document.getElementById('fog-toggle').addEventListener('change', e => {
+  fogMode = e.target.checked;
+  render();
+});
+
+document.getElementById('level-select').addEventListener('change', () => {
+  if (autoTimer) { clearInterval(autoTimer); autoTimer = null; document.getElementById('btn-auto').textContent = '⏩ 自动'; }
+  document.getElementById('msg-log').innerHTML = '';
+  initEnv(parseInt(document.getElementById('level-select').value));
+});
+
+// ── Init ──
+initEnv(1);
+</script>
+</body>
+</html>
