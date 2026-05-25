@@ -46,6 +46,7 @@ SomatoMind 项目源于这样的信念：
 | **E1 — 反思回路** | 导航 Agent + 结构化 Working Memory + Reflection 循环，对比纯 ReAct | 🔲 未开始 |
 | **E2 — 可微分架构对比** | 纯前馈 vs LSTM vs 侧向连接+反馈回路的泛化能力 | 🔲 未开始 |
 | **E3 — 部署后自我进化** | EWC / Differentiable Plasticity / 结构可塑性 | 🔲 未开始 |
+| **E4 — 知觉表征与决策** | 论证智能体的决策以知觉表征为基础——原始感知 vs 结构化表征 vs 语义表征 | 🔲 未开始 |
 
 ### Phase 2: 构建 Brain 原型（将已验证的结构整合为统一大脑）
 
@@ -84,6 +85,7 @@ SomatoMind/
 │   ├── e1_reflection/    # 反思回路实验
 │   ├── e2_architecture/  # 网络架构对比实验
 │   ├── e3_self_evolve/   # 部署后进化实验
+│   ├── e4_perceptual_rep/ # 知觉表征与决策实验
 │   └── ...
 ├── brain/                # 🧠 Brain 认知架构原型
 │   ├── core/             # 核心引擎（快/慢回路调度）
